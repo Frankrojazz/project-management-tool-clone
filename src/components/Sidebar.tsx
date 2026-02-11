@@ -67,12 +67,16 @@ export function Sidebar() {
     });
   };
 
-  const deleteProject = (projectId: string, name: string) => {
-    const ok = window.confirm(`Delete "${name}"? This can't be undone.`);
-    if (!ok) return;
+  const toggleFavoriteProject = (projectId: string) => {
+  dispatch({ type: 'TOGGLE_FAVORITE', payload: projectId });
+};
 
-    dispatch({ type: "DELETE_PROJECT", payload: projectId });
-  };
+const deleteProject = (projectId: string, name: string) => {
+  const ok = window.confirm(`Delete "${name}"? This can't be undone.`);
+  if (!ok) return;
+
+  dispatch({ type: "DELETE_PROJECT", payload: projectId });
+};
 
   // Close user menu on outside click
   useEffect(() => {
@@ -269,17 +273,17 @@ export function Sidebar() {
             </button>
             {favoritesExpanded &&
               favoriteProjects.map((project) => (
-                <ProjectItem
-                  key={project.id}
-                  project={project}
-                  active={state.currentView === 'project' && state.currentProjectId === project.id}
-                  onEdit={() => editProject(project.id, project.name)}
-                  onDelete={() => deleteProject(project.id, project.name)}
-                  
-                  onClick={() =>
-                    dispatch({ type: 'SET_VIEW', payload: { view: 'project', projectId: project.id } })
-                  }
-                />
+               <ProjectItem
+  key={project.id}
+  project={project}
+  active={state.currentView === 'project' && state.currentProjectId === project.id}
+  onToggleFavorite={() => toggleFavoriteProject(project.id)}
+  onEdit={() => editProject(project.id, project.name)}
+  onDelete={() => deleteProject(project.id, project.name)}
+  onClick={() =>
+    dispatch({ type: 'SET_VIEW', payload: { view: 'project', projectId: project.id } })
+  }
+/>
               ))}
           </div>
         )}
@@ -314,9 +318,10 @@ export function Sidebar() {
                   key={project.id}
                   project={project}
                   active={state.currentView === 'project' && state.currentProjectId === project.id}
+                  onToggleFavorite={() => dispatch({ type: 'TOGGLE_FAVORITE', payload: project.id })}
+              
                   onEdit={() => editProject(project.id, project.name)}
                   onDelete={() => deleteProject(project.id, project.name)}
-                  
                   onClick={() =>
                     dispatch({ type: 'SET_VIEW', payload: { view: 'project', projectId: project.id } })
                   }
@@ -475,12 +480,14 @@ function ProjectItem({
   onClick,
   onEdit,
   onDelete,
+  onToggleFavorite,
 }: {
-  project: { id: string; name: string; color: string; icon: string };
+  project: { id: string; name: string; color: string; icon: string; isFavorite?: boolean };
   active: boolean;
   onClick: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  onToggleFavorite?: () => void; // ✅ opcional
 }) {
   const [open, setOpen] = useState(false);
 
@@ -517,7 +524,7 @@ function ProjectItem({
           <div
             className="absolute right-0 mt-1 w-40 rounded-lg border border-gray-700 bg-gray-900 shadow-xl z-50 overflow-hidden"
             onClick={(e) => e.stopPropagation()}
-          >
+          > 
             <button
               type="button"
               onClick={() => {
@@ -529,7 +536,22 @@ function ProjectItem({
               <Pencil size={14} />
               Edit
             </button>
-            <button
+
+{onToggleFavorite && (
+      <button
+        type="button"
+        onClick={() => {
+          setOpen(false);
+          onToggleFavorite();
+        }}
+        className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-200 hover:bg-gray-800"
+      >
+        <Star size={14} className={project.isFavorite ? 'text-yellow-400' : ''} />
+        {project.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+      </button>
+    )}
+            
+              <button
               type="button"
               onClick={() => {
                 setOpen(false);
