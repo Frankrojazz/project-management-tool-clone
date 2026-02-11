@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import logoPng from "../assets/logo.png";
 import { useApp } from '../store';
 import {
   Eye,
@@ -92,10 +93,8 @@ export function LoginPage() {
         {/* Logo */}
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-2">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/15 backdrop-blur-sm font-bold text-white text-xl shadow-lg">
-              P
-            </div>
-            <span className="text-2xl font-bold text-white">Projectify</span>
+            <img src={logoPng} alt="FACTO|cero" className="h-16 w-16 rounded-xl object-cover shadow-lg" />
+            <span className="text-2xl font-bold tracking-tight text-white">FACTO<span className="text-white/70 mx-1">|</span><span className="text-xs align-top text-white/80">cero</span></span>
           </div>
           <p className="text-violet-200 text-sm mt-1">Project Management Platform</p>
         </div>
@@ -141,7 +140,7 @@ export function LoginPage() {
               ))}
             </div>
             <p className="text-violet-200 text-xs ml-1">
-              <span className="font-semibold text-white">2,400+</span> teams trust Projectify
+              <span className="font-semibold tracking-tight text-white">2,400+</span> teams trust Projectify
             </p>
           </div>
         </div>
@@ -152,10 +151,8 @@ export function LoginPage() {
         <div className="w-full max-w-md">
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 font-bold text-white text-lg">
-              P
-            </div>
-            <span className="text-xl font-bold text-gray-900">Projectify</span>
+            <img src={logoPng} alt="FACTO|cero" className="h-14 w-14 rounded-xl object-cover" />
+            <span className="text-xl font-bold tracking-tight text-gray-900">FACTO<span className="text-gray-900/70 mx-1">|</span><span className="text-xs align-top text-gray-900/80">cero</span></span>
           </div>
 
           <div className="text-center mb-8">
@@ -300,7 +297,7 @@ export function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-500/25 hover:from-violet-700 hover:to-indigo-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-3 text-sm font-semibold tracking-tight text-white shadow-lg shadow-violet-500/25 hover:from-violet-700 hover:to-indigo-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />

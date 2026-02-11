@@ -18,6 +18,7 @@ import {
   HelpCircle,
   MoreHorizontal,
 } from 'lucide-react';
+import logoPng from "../assets/logo.png";
 import { useState, useRef, useEffect } from 'react';
 import { useApp, useTranslations } from '../store';
 import { cn } from '../utils/cn';
@@ -137,10 +138,11 @@ export function Sidebar() {
       {/* Header */}
       <div className="flex items-center justify-between border-b border-gray-800 px-4 py-3">
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 font-bold text-white text-sm">
-            P
-          </div>
-          <span className="font-semibold text-white">Projectify</span>
+          <img src={logoPng} alt="FACTO|cero" className="h-12 w-12 rounded-lg object-cover" />
+          <div className="leading-tight">
+  <span className="font-semibold tracking-tight text-white">FACTO<span className="text-white/70 mx-1">|</span><span className="text-xs align-top text-white/80">cero</span></span>
+  <span className="block text-[10px] tracking-wider uppercase text-white/50 -mt-0.5">Project Management Platform</span>
+</div>
         </div>
         <button
           onClick={() => dispatch({ type: 'TOGGLE_SIDEBAR' })}
@@ -282,7 +284,7 @@ export function Sidebar() {
                   {state.currentUser?.avatar ?? 'U'}
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-white">{state.currentUser?.name ?? 'User'}</p>
+                  <p className="text-sm font-semibold tracking-tight text-white">{state.currentUser?.name ?? 'User'}</p>
                   <p className="text-xs text-gray-400">{state.currentUser?.email ?? ''}</p>
                 </div>
               </div>
