@@ -17,6 +17,9 @@ import {
   User,
   HelpCircle,
   MoreHorizontal,
+  Pencil,
+  Trash2,
+  Plus,
 } from 'lucide-react';
 import logoPng from "../assets/logo.png";
 import { useState, useRef, useEffect } from 'react';
@@ -34,6 +37,42 @@ export function Sidebar() {
   const favoriteProjects = state.projects.filter((p) => p.isFavorite);
   const otherProjects = state.projects.filter((p) => !p.isFavorite);
   const unreadInbox = state.inbox.filter((i) => !i.read).length;
+
+
+  const createProject = () => {
+    const name = window.prompt("New project name?");
+    if (!name) return;
+
+    dispatch({
+      type: "ADD_PROJECT",
+      payload: {
+        id: "p-" + Date.now(),
+        name: name.trim(),
+        color: "#8B5CF6",
+        icon: "📁",
+        description: "",
+        isFavorite: false,
+      },
+    });
+  };
+
+
+  const editProject = (projectId: string, currentName: string) => {
+    const name = window.prompt("Rename project:", currentName);
+    if (!name) return;
+
+    dispatch({
+      type: "UPDATE_PROJECT",
+      payload: { id: projectId, updates: { name: name.trim() } },
+    });
+  };
+
+  const deleteProject = (projectId: string, name: string) => {
+    const ok = window.confirm(`Delete "${name}"? This can't be undone.`);
+    if (!ok) return;
+
+    dispatch({ type: "DELETE_PROJECT", payload: projectId });
+  };
 
   // Close user menu on outside click
   useEffect(() => {
@@ -234,6 +273,9 @@ export function Sidebar() {
                   key={project.id}
                   project={project}
                   active={state.currentView === 'project' && state.currentProjectId === project.id}
+                  onEdit={() => editProject(project.id, project.name)}
+                  onDelete={() => deleteProject(project.id, project.name)}
+                  
                   onClick={() =>
                     dispatch({ type: 'SET_VIEW', payload: { view: 'project', projectId: project.id } })
                   }
@@ -244,14 +286,27 @@ export function Sidebar() {
 
         {/* Projects */}
         <div className="mt-6">
-          <button
-            onClick={() => setProjectsExpanded(!projectsExpanded)}
-            className="mb-1 flex w-full items-center gap-1.5 px-2 py-1 text-xs font-semibold uppercase tracking-wider text-gray-500 hover:text-gray-400"
-          >
-            {projectsExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-            <FolderOpen size={12} />
-            {t.projects}
-          </button>
+          <div className="mb-1 flex w-full items-center justify-between px-2 py-1 text-xs font-semibold uppercase tracking-wider text-gray-500 hover:text-gray-400">
+            <button
+              type="button"
+              onClick={() => setProjectsExpanded(!projectsExpanded)}
+              className="flex items-center gap-1.5"
+            >
+              {projectsExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+              <FolderOpen size={12} />
+              {t.projects}
+            </button>
+
+            <button
+              type="button"
+              onClick={createProject}
+              className="rounded-md p-1 text-gray-500 hover:bg-gray-900 hover:text-gray-200"
+              title="New project"
+              aria-label="New project"
+            >
+              <Plus size={14} />
+            </button>
+          </div>
           {projectsExpanded && (
             <>
               {(otherProjects.length > 0 ? otherProjects : state.projects).map((project) => (
@@ -259,6 +314,9 @@ export function Sidebar() {
                   key={project.id}
                   project={project}
                   active={state.currentView === 'project' && state.currentProjectId === project.id}
+                  onEdit={() => editProject(project.id, project.name)}
+                  onDelete={() => deleteProject(project.id, project.name)}
+                  
                   onClick={() =>
                     dispatch({ type: 'SET_VIEW', payload: { view: 'project', projectId: project.id } })
                   }
@@ -415,23 +473,77 @@ function ProjectItem({
   project,
   active,
   onClick,
+  onEdit,
+  onDelete,
 }: {
   project: { id: string; name: string; color: string; icon: string };
   active: boolean;
   onClick: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
 }) {
+  const [open, setOpen] = useState(false);
+
   return (
-    <button
-      onClick={onClick}
-      className={cn(
-        'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-        active ? 'bg-violet-600/20 text-violet-400' : 'text-gray-400 hover:bg-gray-900 hover:text-gray-200'
-      )}
-    >
-      <span className="text-base">{project.icon}</span>
-      <span className="flex-1 truncate text-left">{project.name}</span>
-      <div className="h-2 w-2 rounded-full" style={{ backgroundColor: project.color }} />
-    </button>
+    <div className={cn(
+      'group flex w-full items-center rounded-lg transition-colors',
+      active ? 'bg-violet-600/20 text-violet-400' : 'text-gray-400 hover:bg-gray-900 hover:text-gray-200'
+    )}>
+      <button
+        type="button"
+        onClick={onClick}
+        className="flex flex-1 items-center gap-3 px-3 py-2 text-sm font-medium"
+      >
+        <span className="text-base">{project.icon}</span>
+        <span className="flex-1 truncate text-left">{project.name}</span>
+        <div className="h-2 w-2 rounded-full" style={{ backgroundColor: project.color }} />
+      </button>
+
+      <div className="relative pr-2">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setOpen((v) => !v);
+          }}
+          className="rounded-md p-1 text-gray-500 hover:bg-gray-800 hover:text-gray-200 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition"
+          aria-label="Project menu"
+          title="Project menu"
+        >
+          <MoreHorizontal size={16} />
+        </button>
+
+        {open && (
+          <div
+            className="absolute right-0 mt-1 w-40 rounded-lg border border-gray-700 bg-gray-900 shadow-xl z-50 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                onEdit();
+              }}
+              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-200 hover:bg-gray-800"
+            >
+              <Pencil size={14} />
+              Edit
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                onDelete();
+              }}
+              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-300 hover:bg-gray-800"
+            >
+              <Trash2 size={14} />
+              Delete
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
