@@ -140,7 +140,7 @@ export function Sidebar() {
         <div className="flex items-center gap-2">
           <img src={logoPng} alt="FACTO|cero" className="h-12 w-12 rounded-lg object-cover" />
           <div className="leading-tight">
-  <span className="font-semibold tracking-tight text-white">FACTO<span className="text-white/70 mx-1">|</span><span className="text-xs align-top text-white/80">cero</span></span>
+  <span className="font-semibold text-white inline-flex items-baseline">FACTO<span className="text-white/70 mx-1.5">|</span><span className="text-xs text-white/80">cero</span></span>
   <span className="block text-[10px] tracking-wider uppercase text-white/50 -mt-0.5">Project Management Platform</span>
 </div>
         </div>
