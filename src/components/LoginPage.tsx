@@ -122,11 +122,11 @@ export function LoginPage() {
             </p>
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-400/30 text-sm font-bold text-white">
-                JD
+                CEO
               </div>
               <div>
-                <p className="text-white text-sm font-medium">Jane Doe</p>
-                <p className="text-violet-300 text-xs">CTO, TechCorp</p>
+                <p className="text-white text-sm font-medium">Frank Rojazz</p>
+                <p className="text-violet-300 text-xs">Founder & CEO, FACTOCERO</p>
               </div>
             </div>
           </div>
