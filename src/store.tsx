@@ -89,6 +89,9 @@ type Action =
   | { type: 'SET_SEARCH'; payload: string }
   | { type: 'SELECT_TASK'; payload: string | null }
   | { type: 'TOGGLE_SIDEBAR' }
+  | { type: 'ADD_PROJECT'; payload: Project }
+  | { type: 'UPDATE_PROJECT'; payload: { id: string; updates: Partial<Project> } }
+  | { type: 'DELETE_PROJECT'; payload: string }
   | { type: 'ADD_TASK'; payload: Task }
   | { type: 'UPDATE_TASK'; payload: { id: string; updates: Partial<Task> } }
   | { type: 'DELETE_TASK'; payload: string }
