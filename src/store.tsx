@@ -325,6 +325,26 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, selectedTaskId: action.payload };
     case 'TOGGLE_SIDEBAR':
       return { ...state, sidebarCollapsed: !state.sidebarCollapsed };
+    case 'ADD_PROJECT': {
+      return {
+        ...state,
+        projects: [...state.projects, action.payload],
+      };
+    }
+    case 'UPDATE_PROJECT': {
+      return {
+        ...state,
+        projects: state.projects.map((p) => (p.id === action.payload.id ? { ...p, ...action.payload.updates } : p)),
+      };
+    }
+    case 'DELETE_PROJECT': {
+      return {
+        ...state,
+        projects: state.projects.filter((p) => p.id !== action.payload),
+        currentProjectId: state.currentProjectId === action.payload ? null : state.currentProjectId,
+      };
+    }
+
     case 'ADD_TASK':
       return { ...state, tasks: [...state.tasks, action.payload], showNewTaskModal: false };
     case 'UPDATE_TASK':
