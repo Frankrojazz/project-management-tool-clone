@@ -103,6 +103,8 @@ type Action =
   | { type: 'ADD_GOAL'; payload: Goal }
   | { type: 'DELETE_GOAL'; payload: string }
   | { type: 'MARK_INBOX_READ'; payload: string }
+  | { type: 'CLEAR_INBOX_FOR_USER'; payload: { userId: string } }
+  | { type: 'ADD_INBOX_ITEM'; payload: InboxItem }
   | { type: 'TOGGLE_TASK_COLLABORATOR'; payload: { taskId: string; collaboratorId: string } }
   | { type: 'OPEN_DELIVERABLE_MODAL' }
   | { type: 'CLOSE_DELIVERABLE_MODAL' }
@@ -245,27 +247,41 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, authError: 'Invalid email or password. Try demo@demo.com / demo' };
     }
     case 'REGISTER': {
-      const newUser: AuthUser = {
-        id: `u-${Date.now()}`,
-        name: action.payload.name,
-        email: action.payload.email,
-        avatar: action.payload.name
-          .split(' ')
-          .map((n) => n[0])
-          .join('')
-          .toUpperCase()
-          .substring(0, 2),
-        color: '#8B5CF6',
-        role: 'Team Member',
-        joinedDate: new Date().toISOString().split('T')[0],
-      };
-      return {
-        ...state,
-        isAuthenticated: true,
-        currentUser: newUser,
-        authError: null,
-      };
-    }
+  const newUser: AuthUser = {
+    id: `u-${Date.now()}`,
+    name: action.payload.name,
+    email: action.payload.email,
+    avatar: action.payload.name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .substring(0, 2),
+    color: '#8B5CF6',
+    role: 'Team Member',
+    joinedDate: new Date().toISOString().split('T')[0],
+  };
+
+  const directoryUser = {
+    id: newUser.id,
+    name: newUser.name,
+    email: newUser.email,
+    avatar: newUser.avatar,
+    color: newUser.color,
+    type: 'human' as const,
+  };
+
+  const exists = state.users.some((u) => u.id === directoryUser.id);
+
+  return {
+    ...state,
+    isAuthenticated: true,
+    currentUser: newUser,
+    // ✅ aquí lo agregamos a la lista global
+    users: exists ? state.users : [...state.users, directoryUser],
+    authError: null,
+  };
+}
     case 'LOGOUT':
       return {
         ...state,
@@ -345,30 +361,228 @@ function reducer(state: AppState, action: Action): AppState {
       };
     }
 
-    case 'ADD_TASK':
-      return { ...state, tasks: [...state.tasks, action.payload], showNewTaskModal: false };
-    case 'UPDATE_TASK':
-      return {
-        ...state,
-        tasks: state.tasks.map((t) =>
-          t.id === action.payload.id ? { ...t, ...action.payload.updates } : t
-        ),
-      };
+   case 'ADD_TASK': {
+  const task = action.payload;
+
+  // soporte para multi-asignación (nuevo) y para el modelo viejo (assigneeId)
+  const assignees =
+    task.assigneeIds && task.assigneeIds.length > 0
+      ? task.assigneeIds
+      : task.assigneeId
+        ? [task.assigneeId]
+        : [];
+
+ const now = Date.now();
+const actorId = state.currentUser?.id ?? 'system';
+const actorName = state.currentUser?.name ?? 'Someone';
+
+// 1) Notificación para cada asignado
+const inboxItems = assignees.map((assigneeId) => ({
+  id: `inb-${now}-${assigneeId}`,
+  type: 'assignment' as const,
+  message: `${actorName} assigned you "${task.title}"`,
+  taskId: task.id,
+  projectId: task.projectId,
+  timestamp: new Date().toISOString(),
+  read: false,
+  recipientId: assigneeId,
+  actorId,
+}));
+
+// 2) Historial para el que asigna (tú): 1 sola notificación resumen
+const actorInboxItem = {
+  id: `inb-${now}-actor`,
+  type: 'assignment' as const,
+  message: `You assigned "${task.title}" to: ${assignees
+    .map((id) => state.users.find((u) => u.id === id)?.name ?? id)
+    .join(', ') || 'Unassigned'}`,
+  taskId: task.id,
+  projectId: task.projectId,
+  timestamp: new Date().toISOString(),
+  read: true, // lo marco como leído para que no te “moleste”
+  recipientId: actorId,
+  actorId,
+};
+
+  return {
+    ...state,
+    tasks: [...state.tasks, task],
+   inbox: [actorInboxItem, ...inboxItems, ...state.inbox].filter((item) => {
+  const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+  return Date.now() - new Date(item.timestamp).getTime() <= sevenDaysMs;
+}),
+    showNewTaskModal: false,
+  };
+}
+    case 'UPDATE_TASK': {
+  const { id, updates } = action.payload;
+
+  const prev = state.tasks.find((t) => t.id === id);
+  if (!prev) return state;
+
+  const next = { ...prev, ...updates };
+
+  const actorId = state.currentUser?.id ?? 'system';
+  const actorName = state.currentUser?.name ?? 'Someone';
+  const now = Date.now();
+  const ts = new Date().toISOString();
+
+  // Helpers: soporta modelo viejo (assigneeId) y nuevo (assigneeIds)
+  const prevAssignees = prev.assigneeIds?.length
+    ? prev.assigneeIds
+    : prev.assigneeId
+      ? [prev.assigneeId]
+      : [];
+
+  const nextAssignees = next.assigneeIds?.length
+    ? next.assigneeIds
+    : next.assigneeId
+      ? [next.assigneeId]
+      : [];
+
+  // 1) Detectar nuevos asignados
+  const addedAssignees = nextAssignees.filter((a) => !prevAssignees.includes(a));
+
+  const inboxItems: any[] = [];
+
+  // Notificación por cada nuevo asignado
+  for (const assigneeId of addedAssignees) {
+    inboxItems.push({
+      id: `inb-${now}-assign-${assigneeId}`,
+      type: 'assignment' as const,
+      message: `${actorName} assigned you "${next.title}"`,
+      taskId: next.id,
+      projectId: next.projectId,
+      timestamp: ts,
+      read: false,
+      recipientId: assigneeId,
+      actorId,
+    });
+  }
+
+  // Historial para el actor (tú) cuando cambian los asignados
+if (
+  ('assigneeId' in updates) ||
+  ('assigneeIds' in updates) ||
+  addedAssignees.length > 0
+) {
+  inboxItems.push({
+    id: `inb-${now}-assign-actor`,
+    type: 'assignment' as const,
+    message: `You updated assignees for "${next.title}": ${nextAssignees
+      .map((id) => state.users.find((u) => u.id === id)?.name ?? id)
+      .join(', ') || 'Unassigned'}`,
+    taskId: next.id,
+    projectId: next.projectId,
+    timestamp: ts,
+    read: true,
+    recipientId: actorId,
+    actorId,
+  });
+}
+
+  // 2) Si cambió status, notificar a todos los asignados
+  if (updates.status && updates.status !== prev.status) {
+    for (const assigneeId of nextAssignees) {
+      inboxItems.push({
+        id: `inb-${now}-status-${assigneeId}`,
+        type: 'comment' as const, // si prefieres, crea un tipo nuevo "status_change"
+        message: `${actorName} changed "${next.title}" status: ${prev.status} → ${updates.status}`,
+        taskId: next.id,
+        projectId: next.projectId,
+        timestamp: ts,
+        read: false,
+        recipientId: assigneeId,
+        actorId,
+      });
+    }
+
+    // Historial para el actor (tú)
+    inboxItems.push({
+      id: `inb-${now}-status-actor`,
+      type: 'comment' as const,
+      message: `You changed "${next.title}" status: ${prev.status} → ${updates.status}`,
+      taskId: next.id,
+      projectId: next.projectId,
+      timestamp: ts,
+      read: true,
+      recipientId: actorId,
+      actorId,
+    });
+  }
+
+  return {
+    ...state,
+    tasks: state.tasks.map((t) => (t.id === id ? next : t)),
+    inbox: [...inboxItems, ...state.inbox],
+  };
+}
     case 'DELETE_TASK':
       return {
         ...state,
         tasks: state.tasks.filter((t) => t.id !== action.payload),
         selectedTaskId: state.selectedTaskId === action.payload ? null : state.selectedTaskId,
       };
-    case 'MOVE_TASK':
-      return {
-        ...state,
-        tasks: state.tasks.map((t) =>
-          t.id === action.payload.taskId
-            ? { ...t, status: action.payload.status, completed: action.payload.status === 'done' }
-            : t
-        ),
-      };
+    case 'MOVE_TASK': {
+  const { taskId, status } = action.payload;
+
+  const prev = state.tasks.find((t) => t.id === taskId);
+  if (!prev) return state;
+
+  // si no cambió, no hacemos nada
+  if (prev.status === status) return state;
+
+  const next = { ...prev, status, completed: status === 'done' };
+
+  const actorId = state.currentUser?.id ?? 'system';
+  const actorName = state.currentUser?.name ?? 'Someone';
+  const now = Date.now();
+  const ts = new Date().toISOString();
+
+  // soporta modelo viejo (assigneeId) y nuevo (assigneeIds)
+  const assignees =
+    next.assigneeIds?.length ? next.assigneeIds : next.assigneeId ? [next.assigneeId] : [];
+
+  const inboxItems: any[] = [];
+
+  // notificar a todos los asignados
+  for (const assigneeId of assignees) {
+    inboxItems.push({
+      id: `inb-${now}-status-${assigneeId}`,
+      type: 'comment' as const,
+      message: `${actorName} changed "${next.title}" status: ${prev.status} → ${status}`,
+      taskId: next.id,
+      projectId: next.projectId,
+      timestamp: ts,
+      read: false,
+      recipientId: assigneeId,
+      actorId,
+    });
+  }
+
+  // historial para el actor (tú)
+  inboxItems.push({
+    id: `inb-${now}-status-actor`,
+    type: 'comment' as const,
+    message: `You changed "${next.title}" status: ${prev.status} → ${status}`,
+    taskId: next.id,
+    projectId: next.projectId,
+    timestamp: ts,
+    read: true,
+    recipientId: actorId,
+    actorId,
+  });
+
+  const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+
+  return {
+    ...state,
+    tasks: state.tasks.map((t) => (t.id === taskId ? next : t)),
+    inbox: [...inboxItems, ...state.inbox].filter(
+      (item) => Date.now() - new Date(item.timestamp).getTime() <= sevenDaysMs
+    ),
+  };
+}
     case 'TOGGLE_SUBTASK':
       return {
         ...state,
@@ -413,13 +627,30 @@ function reducer(state: AppState, action: Action): AppState {
         ...state,
         goals: state.goals.filter((g) => g.id !== action.payload),
       };
-    case 'MARK_INBOX_READ':
+      case 'ADD_INBOX_ITEM': {
+  const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+  const nextInbox = [action.payload, ...state.inbox].filter((item) => {
+    return Date.now() - new Date(item.timestamp).getTime() <= sevenDaysMs;
+  });
+
+  return {
+    ...state,
+    inbox: nextInbox,
+  };
+}
+      case 'MARK_INBOX_READ':
       return {
         ...state,
         inbox: state.inbox.map((i) =>
           i.id === action.payload ? { ...i, read: true } : i
         ),
       };
+
+      case 'CLEAR_INBOX_FOR_USER':
+  return {
+    ...state,
+    inbox: state.inbox.filter((i) => i.recipientId !== action.payload.userId),
+  };
 
     case 'TOGGLE_TASK_COLLABORATOR': {
       return {

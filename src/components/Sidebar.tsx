@@ -36,8 +36,8 @@ export function Sidebar() {
 
   const favoriteProjects = state.projects.filter((p) => p.isFavorite);
   const otherProjects = state.projects.filter((p) => !p.isFavorite);
-  const unreadInbox = state.inbox.filter((i) => !i.read).length;
-
+  const currentUserId = state.currentUser?.id ?? 'u1';
+  const unreadInbox = state.inbox.filter((i) => i.recipientId === currentUserId && !i.read).length;
 
   const createProject = () => {
     const name = window.prompt("New project name?");
@@ -110,7 +110,20 @@ const deleteProject = (projectId: string, name: string) => {
           )}
         >
           <Home size={20} />
-        </button>
+        {state.tasks.filter(
+    (task) =>
+      (task.assigneeId === currentUserId || task.assigneeIds?.includes(currentUserId)) &&
+      !task.completed
+  ).length > 0 && (
+    <div className="absolute -top-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-violet-600 text-[8px] font-bold text-white flex items-center justify-center">
+      {state.tasks.filter(
+        (task) =>
+          (task.assigneeId === currentUserId || task.assigneeIds?.includes(currentUserId)) &&
+          !task.completed
+      ).length}
+    </div>
+  )}
+</button>
         <button
           onClick={() => dispatch({ type: 'SET_VIEW', payload: { view: 'my_tasks' } })}
           className={cn(
@@ -223,7 +236,7 @@ const deleteProject = (projectId: string, name: string) => {
             label={t.myTasks}
             active={state.currentView === 'my_tasks'}
             onClick={() => dispatch({ type: 'SET_VIEW', payload: { view: 'my_tasks' } })}
-            badge={state.tasks.filter((task) => task.assigneeId === 'u1' && !task.completed).length}
+            badge={state.tasks.filter((task) => (task.assigneeId === currentUserId || task.assigneeIds?.includes(currentUserId)) && !task.completed).length}
           />
           <NavItem
             icon={<Inbox size={18} />}

@@ -13,7 +13,7 @@ import {
   FileText,
   Target,
 } from 'lucide-react';
-import { useApp, users } from '../store';
+import { useApp } from '../store';
 import { COLUMNS, PRIORITY_CONFIG, type Priority, type TaskStatus } from '../types';
 import { cn } from '../utils/cn';
 
@@ -56,12 +56,18 @@ export function TaskDetail() {
     });
   };
 
-  const handleAssigneeChange = (assigneeId: string | null) => {
-    dispatch({
-      type: 'UPDATE_TASK',
-      payload: { id: task.id, updates: { assigneeId } },
-    });
-  };
+const handleAssigneesChange = (assigneeIds: string[]) => {
+  dispatch({
+    type: 'UPDATE_TASK',
+    payload: {
+      id: task.id,
+      updates: {
+        assigneeIds,
+        assigneeId: assigneeIds[0] ?? null, // compat con vistas viejas
+      },
+    },
+  });
+};
 
   const handleGoalChange = (goalId: string | undefined) => {
     dispatch({
@@ -79,6 +85,12 @@ export function TaskDetail() {
 
   const selectedGoal = state.goals.find((g) => g.id === task.goalId);
   const selectedKR = selectedGoal?.keyResults.find((kr) => kr.id === task.keyResultId);
+  const selectedAssigneeIds =
+  task.assigneeIds?.length
+    ? task.assigneeIds
+    : task.assigneeId
+      ? [task.assigneeId]
+      : [];
 
   return (
     <>
@@ -191,43 +203,54 @@ export function TaskDetail() {
               </div>
             </div>
 
-            {/* Assignee */}
-            <div className="flex items-center gap-4">
-              <div className="flex w-28 items-center gap-2 text-sm text-gray-500">
-                <User size={14} />
-                Assignee
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                <button
-                  onClick={() => handleAssigneeChange(null)}
-                  className={cn(
-                    'rounded-lg px-3 py-1.5 text-xs font-medium transition-all',
-                    !task.assigneeId
-                      ? 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200'
-                      : 'bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-300 border border-gray-200 dark:border-gray-600 hover:border-gray-300'
-                  )}
-                >
-                  Unassigned
-                </button>
-                {users.map((u) => (
-                  <button
-                    key={u.id}
-                    onClick={() => handleAssigneeChange(u.id)}
-                    className={cn(
-                      'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all',
-                      task.assigneeId === u.id
-                        ? 'text-white shadow-sm'
-                        : 'bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-300 border border-gray-200 dark:border-gray-600 hover:border-gray-300'
-                    )}
-                    style={
-                      task.assigneeId === u.id ? { backgroundColor: u.color } : undefined
-                    }
-                  >
-                    {u.name.split(' ')[0]}
-                  </button>
-                ))}
-              </div>
-            </div>
+           {/* Assignees */}
+<div className="flex items-center gap-4">
+  <div className="flex w-28 items-center gap-2 text-sm text-gray-500">
+    <User size={14} />
+    Assignees
+  </div>
+
+  <div className="flex flex-1 items-center gap-2">
+    <select
+      multiple
+      value={selectedAssigneeIds}
+      onChange={(e) => {
+        const ids = Array.from(e.target.selectedOptions).map((opt) => opt.value);
+        handleAssigneesChange(ids);
+      }}
+      className="flex-1 rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-2 text-xs text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-400"
+    >
+      {[
+  ...state.users,
+  ...(state.currentUser && !state.users.some((u) => u.id === state.currentUser!.id)
+    ? [
+        {
+          id: state.currentUser.id,
+          name: `${state.currentUser.name} (you)`,
+          avatar: state.currentUser.avatar,
+          color: state.currentUser.color,
+          type: 'human' as const,
+          email: state.currentUser.email,
+        },
+      ]
+    : []),
+].map((u) => (
+  <option key={u.id} value={u.id}>
+    {u.name}
+  </option>
+))}
+    </select>
+
+    <button
+      type="button"
+      onClick={() => handleAssigneesChange([])}
+      className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700 px-3 py-2 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600"
+      title="Clear assignees"
+    >
+      Clear
+    </button>
+  </div>
+</div>
 
             {/* Due Date */}
             <div className="flex items-center gap-4">

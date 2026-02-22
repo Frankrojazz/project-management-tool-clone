@@ -47,6 +47,7 @@ export interface Task {
   status: TaskStatus;
   priority: Priority;
   assigneeId: string | null;
+  assigneeIds?: string[];
   projectId: string;
   dueDate: string | null;
   startDate: string | null;
@@ -77,6 +78,7 @@ export interface Project {
   icon: string;
   description: string;
   isFavorite: boolean;
+  memberIds: string[]; // ✅ miembros del proyecto
 }
 
 export interface Goal {

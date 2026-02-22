@@ -57,6 +57,7 @@ export const projects: Project[] = [
     icon: '🎨',
     description: 'Complete overhaul of the company website with modern design',
     isFavorite: true,
+    memberIds: ['u1', 'u2', 'u3'],
   },
   {
     id: 'p2',
@@ -65,6 +66,7 @@ export const projects: Project[] = [
     icon: '📱',
     description: 'Native mobile application for iOS and Android',
     isFavorite: true,
+    memberIds: ['u1', 'u2', 'u3'],
   },
   {
     id: 'p3',
@@ -73,6 +75,7 @@ export const projects: Project[] = [
     icon: '📢',
     description: 'Q4 marketing campaign planning and execution',
     isFavorite: false,
+    memberIds: ['u1', 'u2', 'u3'],
   },
   {
     id: 'p4',
@@ -81,6 +84,7 @@ export const projects: Project[] = [
     icon: '🔗',
     description: 'Third-party API integrations and microservices',
     isFavorite: false,
+    memberIds: ['u1', 'u2', 'u3'],
   },
 ];
 

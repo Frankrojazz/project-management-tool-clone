@@ -33,7 +33,8 @@ function AppContent() {
     if (state.currentView === 'project' && state.currentProjectId) {
       tasks = tasks.filter((t) => t.projectId === state.currentProjectId);
     } else if (state.currentView === 'my_tasks') {
-      tasks = tasks.filter((t) => t.assigneeId === (state.currentUser?.id ?? 'u1'));
+    const me = state.currentUser?.id ?? 'u1';
+      tasks = tasks.filter((t) => t.assigneeId === me || (t.assigneeIds?.includes(me) ?? false));
     }
 
     // Filter by search

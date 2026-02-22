@@ -5,11 +5,19 @@ import { cn } from '../utils/cn';
 
 export function InboxView() {
   const { state, dispatch } = useApp();
+  console.log('INBOX DEBUG: InboxView rendered');
   
   // Filtrar inbox solo para el usuario actual
   const currentUserId = state.currentUser?.id ?? 'u1';
   const userInbox = state.inbox.filter((i) => i.recipientId === currentUserId);
   const unreadCount = userInbox.filter((i) => !i.read).length;
+
+  console.log('INBOX DEBUG', {
+  currentUserId,
+  inboxLen: state.inbox.length,
+  userInboxLen: userInbox.length,
+  currentUser: state.currentUser,
+});
 
   const markAllRead = () => {
     userInbox.forEach((item) => {
@@ -18,6 +26,10 @@ export function InboxView() {
       }
     });
   };
+
+  const clearMyInbox = () => {
+  dispatch({ type: 'CLEAR_INBOX_FOR_USER', payload: { userId: currentUserId } });
+};
 
   const getIcon = (type: InboxItem['type']) => {
     switch (type) {
@@ -45,27 +57,39 @@ export function InboxView() {
       <div className="mx-auto max-w-3xl p-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 p-2.5">
-              <Inbox size={24} className="text-white" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Inbox</h1>
-              <p className="text-sm text-gray-500">
-                {unreadCount > 0 ? `${unreadCount} unread notifications` : 'All caught up!'}
-              </p>
-            </div>
-          </div>
-          {unreadCount > 0 && (
-            <button
-              onClick={markAllRead}
-              className="flex items-center gap-1.5 rounded-lg bg-white border border-gray-200 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors"
-            >
-              <Check size={14} />
-              Mark all as read
-            </button>
-          )}
-        </div>
+  {/* Izquierda */}
+  <div className="flex items-center gap-3">
+    <div className="rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 p-2.5">
+      <Inbox size={24} className="text-white" />
+    </div>
+    <div>
+      <h1 className="text-2xl font-bold text-gray-900">Inbox</h1>
+      <p className="text-sm text-gray-500">
+        {unreadCount > 0 ? `${unreadCount} unread notifications` : 'All caught up!'}
+      </p>
+    </div>
+  </div>
+
+  {/* Derecha */}
+  <div className="flex items-center gap-2">
+    {unreadCount > 0 && (
+      <button
+        onClick={markAllRead}
+        className="flex items-center gap-1.5 rounded-lg bg-white border border-gray-200 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+      >
+        <Check size={14} />
+        Mark all as read
+      </button>
+    )}
+
+    <button
+      onClick={clearMyInbox}
+      className="flex items-center rounded-lg bg-white border border-gray-200 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+    >
+      Clear my inbox
+    </button>
+  </div>
+</div>
 
         {/* Notifications */}
         <div className="space-y-2">
