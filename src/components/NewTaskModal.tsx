@@ -56,15 +56,21 @@ export function NewTaskModal() {
   const selectedGoal = state.goals.find(g => g.id === goalId);
   const selectedKeyResults = selectedGoal ? selectedGoal.keyResults : [];
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title.trim()) return;
-    if (goalId && !keyResultId) return alert('Key Result is required when Goal is selected');
+  const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!title.trim()) return;
+  if (goalId && !keyResultId) return alert('Key Result is required when Goal is selected');
 
-    dispatch({
-      type: 'ADD_TASK',
-      payload: {
-        id: `task-${Date.now()}`,
+  const token = localStorage.getItem('authToken');
+
+  try {
+    const res = await fetch('/api/tasks', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({
         title: title.trim(),
         description: description.trim(),
         status,
@@ -80,9 +86,29 @@ export function NewTaskModal() {
         completed: status === 'done',
         createdAt: new Date().toISOString().split('T')[0],
         subtasks: [],
-      },
+      }),
     });
-  };
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`POST /api/tasks failed: ${res.status} ${text}`);
+    }
+
+    const taskFromApi = await res.json();
+    dispatch({ type: 'ADD_TASK', payload: taskFromApi });
+     dispatch({ type: 'SHOW_NEW_TASK_MODAL', payload: { show: false } });
+    setTitle('');
+    setDescription('');
+    setAssigneeIds([]);
+    setDueDate('');
+    setStartDate('');
+    setGoalId('');
+    setKeyResultId('');
+  } catch (err) {
+    console.error(err);
+    alert('No se pudo crear la tarea (backend). Revisa consola/terminal.');
+  }
+};
 
   const handleClose = () =>
     dispatch({ type: 'SHOW_NEW_TASK_MODAL', payload: { show: false } });

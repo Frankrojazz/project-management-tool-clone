@@ -17,6 +17,7 @@ import { GptCollaboratorsView } from './components/GptCollaboratorsView';
 import { GptCollaboratorModal } from './components/GptCollaboratorModal';
 import { DeliverableModal } from './components/DeliverableModal';
 import { ProjectHeader } from './components/ProjectHeader';
+import { Toaster } from 'react-hot-toast';
 
 function AppContent() {
   const { state } = useApp();
@@ -131,6 +132,7 @@ function AppContent() {
 export function App() {
   return (
     <AppProvider>
+      <Toaster position="top-right" />
       <AppContent />
     </AppProvider>
   );

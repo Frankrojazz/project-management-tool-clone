@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import logoPng from "../assets/logo.png";
 import { useApp } from '../store';
 import {
@@ -16,6 +16,8 @@ import {
   Github,
   Chrome,
 } from 'lucide-react';
+
+const INVITE_TOKEN_KEY = 'pendingInviteToken';
 // utils
 
 export function LoginPage() {
@@ -26,48 +28,109 @@ export function LoginPage() {
   const [name, setName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showInviteMessage, setShowInviteMessage] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('login') === 'true') {
+      setShowInviteMessage(true);
+    }
+  }, []);
+
+  const handleLoginSuccess = (token: string, user: any) => {
+    localStorage.setItem('authToken', token);
+    dispatch({ type: 'SET_AUTH_TOKEN', payload: token });
+    dispatch({ type: 'LOGIN_SUCCESS', payload: { user, token } });
+
+    const pendingInviteToken = localStorage.getItem(INVITE_TOKEN_KEY);
+    
+    if (pendingInviteToken) {
+      localStorage.removeItem(INVITE_TOKEN_KEY);
+      window.location.href = `/accept-invite?token=${pendingInviteToken}`;
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     dispatch({ type: 'CLEAR_AUTH_ERROR' });
     setIsLoading(true);
 
-    // Simulate network delay
-    await new Promise((r) => setTimeout(r, 800));
+    try {
+      if (isRegister) {
+        if (!name.trim() || !email.trim() || !password.trim()) {
+          dispatch({ type: 'AUTH_ERROR', payload: 'Please fill in all fields' });
+          setIsLoading(false);
+          return;
+        }
 
-    if (isRegister) {
-      if (!name.trim() || !email.trim() || !password.trim()) {
-        setIsLoading(false);
-        return;
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, password }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          dispatch({ type: 'AUTH_ERROR', payload: data.error || 'Registration failed' });
+          setIsLoading(false);
+          return;
+        }
+
+        handleLoginSuccess(data.token, data.user);
+      } else {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          dispatch({ type: 'AUTH_ERROR', payload: data.error || 'Invalid email or password' });
+          setIsLoading(false);
+          return;
+        }
+
+        handleLoginSuccess(data.token, data.user);
       }
-      dispatch({ type: 'REGISTER', payload: { name, email, password } });
-    } else {
-      dispatch({ type: 'LOGIN', payload: { email, password } });
+    } catch (err) {
+      dispatch({ type: 'AUTH_ERROR', payload: 'Connection error. Please try again.' });
     }
+
     setIsLoading(false);
   };
 
   const handleDemoLogin = async () => {
     setIsLoading(true);
-    setEmail('demo@demo.com');
-    setPassword('demo');
-    await new Promise((r) => setTimeout(r, 600));
-    dispatch({ type: 'LOGIN', payload: { email: 'demo@demo.com', password: 'demo' } });
-    setIsLoading(false);
+    setEmail('sarah@fcmanager.io');
+    setPassword('demo123');
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: 'sarah@fcmanager.io', password: 'demo123' }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        dispatch({ type: 'AUTH_ERROR', payload: data.error || 'Login failed' });
+        setIsLoading(false);
+        return;
+      }
+
+      handleLoginSuccess(data.token, data.user);
+    } catch (err) {
+      dispatch({ type: 'AUTH_ERROR', payload: 'Connection error. Please try again.' });
+      setIsLoading(false);
+    }
   };
 
   const handleSocialLogin = async (provider: string) => {
-    setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 800));
-    dispatch({
-      type: 'REGISTER',
-      payload: {
-        name: `${provider} User`,
-        email: `user@${provider.toLowerCase()}.com`,
-        password: 'social',
-      },
-    });
-    setIsLoading(false);
+    dispatch({ type: 'AUTH_ERROR', payload: 'Social login not available. Use email registration instead.' });
   };
 
   return (
@@ -117,7 +180,7 @@ export function LoginPage() {
         <div className="relative z-10">
           <div className="rounded-2xl bg-white/10 backdrop-blur-sm p-6 border border-white/10">
             <p className="text-white/90 text-sm leading-relaxed mb-4">
-              "Projectify transformed how our team works. We shipped 40% faster in just 3 months."
+              "FC Manager transformed how our team works. We shipped 40% faster in just 3 months."
             </p>
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-400/30 text-sm font-bold text-white">
@@ -140,7 +203,7 @@ export function LoginPage() {
               ))}
             </div>
             <p className="text-violet-200 text-xs ml-1">
-              <span className="font-semibold tracking-tight text-white">2,400+</span> teams trust Projectify
+              <span className="font-semibold tracking-tight text-white">2,400+</span> teams trust FC Manager
             </p>
           </div>
         </div>
@@ -164,6 +227,14 @@ export function LoginPage() {
                 ? 'Start managing your projects today'
                 : 'Sign in to continue to your workspace'}
             </p>
+            
+            {showInviteMessage && (
+              <div className="mt-4 p-3 bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800 rounded-xl">
+                <p className="text-sm text-violet-700 dark:text-violet-300">
+                  You're signing in to accept a project invitation
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Social Login */}
@@ -347,7 +418,7 @@ export function LoginPage() {
               <div className="flex items-center gap-2">
                 <CheckCircle2 size={12} className="text-green-500" />
                 <span className="text-xs text-gray-600">
-                  <strong>sarah@projectify.io</strong> / <strong>demo123</strong>
+                  <strong>sarah@fcmanager.io</strong> / <strong>demo123</strong>
                 </span>
               </div>
               <div className="flex items-center gap-2">

@@ -45,6 +45,7 @@ interface AppState {
   isAuthenticated: boolean;
   currentUser: AuthUser | null;
   authError: string | null;
+  authToken: string | null;
 
   // Settings
   settings: AppSettings;
@@ -76,6 +77,9 @@ interface AppState {
 type Action =
   | { type: 'LOGIN'; payload: { email: string; password: string } }
   | { type: 'REGISTER'; payload: { name: string; email: string; password: string } }
+  | { type: 'LOGIN_SUCCESS'; payload: { user: AuthUser; token: string } }
+  | { type: 'SET_AUTH_TOKEN'; payload: string }
+  | { type: 'AUTH_ERROR'; payload: string }
   | { type: 'LOGOUT' }
   | { type: 'CLEAR_AUTH_ERROR' }
   | { type: 'UPDATE_PROFILE'; payload: Partial<AuthUser> }
@@ -84,6 +88,15 @@ type Action =
   | { type: 'UPDATE_DISPLAY_SETTINGS'; payload: Partial<AppSettings['display']> }
   | { type: 'UPDATE_PRIVACY_SETTINGS'; payload: Partial<AppSettings['privacy']> }
   | { type: 'TOGGLE_USER_MENU' }
+  | { type: 'BOOTSTRAP';
+        payload: {
+        users: User[];
+        projects: Project[];
+        tasks: Task[];
+        goals: Goal[];
+        inbox: InboxItem[];
+      };
+    }
   | { type: 'SET_VIEW'; payload: { view: NavigationView; projectId?: string } }
   | { type: 'SET_VIEW_MODE'; payload: ViewMode }
   | { type: 'SET_SEARCH'; payload: string }
@@ -146,12 +159,12 @@ const defaultSettings: AppSettings = {
 // Demo accounts
 const demoAccounts: { email: string; password: string; user: AuthUser }[] = [
   {
-    email: 'sarah@projectify.io',
+    email: 'sarah@fcmanager.io',
     password: 'demo123',
     user: {
       id: 'u1',
       name: 'Sarah Chen',
-      email: 'sarah@projectify.io',
+      email: 'sarah@fcmanager.io',
       avatar: 'SC',
       color: '#8B5CF6',
       role: 'Project Manager',
@@ -159,12 +172,12 @@ const demoAccounts: { email: string; password: string; user: AuthUser }[] = [
     },
   },
   {
-    email: 'alex@projectify.io',
+    email: 'alex@fcmanager.io',
     password: 'demo123',
     user: {
       id: 'u2',
       name: 'Alex Rivera',
-      email: 'alex@projectify.io',
+email: 'alex@fcmanager.io',
       avatar: 'AR',
       color: '#3B82F6',
       role: 'Full Stack Developer',
@@ -190,6 +203,7 @@ const initialState: AppState = {
   isAuthenticated: false,
   currentUser: null,
   authError: null,
+  authToken: null,
   settings: defaultSettings,
   showUserMenu: false,
 
@@ -215,78 +229,67 @@ const initialState: AppState = {
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case 'LOGIN': {
-      const account = demoAccounts.find(
-        (a) => a.email.toLowerCase() === action.payload.email.toLowerCase() && a.password === action.payload.password
-      );
-      if (account) {
-        return {
-          ...state,
-          isAuthenticated: true,
-          currentUser: account.user,
-          authError: null,
-        };
-      }
-      // Allow any registration as guest
-      if (action.payload.email && action.payload.password) {
-        const guestUser: AuthUser = {
-          id: 'u-guest',
-          name: action.payload.email.split('@')[0],
-          email: action.payload.email,
-          avatar: action.payload.email.substring(0, 2).toUpperCase(),
-          color: '#8B5CF6',
-          role: 'Team Member',
-          joinedDate: new Date().toISOString().split('T')[0],
-        };
-        return {
-          ...state,
-          isAuthenticated: true,
-          currentUser: guestUser,
-          authError: null,
-        };
-      }
-      return { ...state, authError: 'Invalid email or password. Try demo@demo.com / demo' };
+      // Login is now handled by async thunk in the component
+      // This reducer is used as fallback or for demo mode
+      return state;
     }
     case 'REGISTER': {
-  const newUser: AuthUser = {
-    id: `u-${Date.now()}`,
-    name: action.payload.name,
-    email: action.payload.email,
-    avatar: action.payload.name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase()
-      .substring(0, 2),
-    color: '#8B5CF6',
-    role: 'Team Member',
-    joinedDate: new Date().toISOString().split('T')[0],
-  };
+      const newUser: AuthUser = {
+        id: `u-${Date.now()}`,
+        name: action.payload.name,
+        email: action.payload.email,
+        avatar: action.payload.name
+          .split(' ')
+          .map((n) => n[0])
+          .join('')
+          .toUpperCase()
+          .substring(0, 2),
+        color: '#8B5CF6',
+        role: 'Team Member',
+        joinedDate: new Date().toISOString().split('T')[0],
+      };
 
-  const directoryUser = {
-    id: newUser.id,
-    name: newUser.name,
-    email: newUser.email,
-    avatar: newUser.avatar,
-    color: newUser.color,
-    type: 'human' as const,
-  };
+      const directoryUser = {
+        id: newUser.id,
+        name: newUser.name,
+        email: newUser.email,
+        avatar: newUser.avatar,
+        color: newUser.color,
+        type: 'human' as const,
+      };
 
-  const exists = state.users.some((u) => u.id === directoryUser.id);
+      const exists = state.users.some((u) => u.id === directoryUser.id);
 
-  return {
-    ...state,
-    isAuthenticated: true,
-    currentUser: newUser,
-    // ✅ aquí lo agregamos a la lista global
-    users: exists ? state.users : [...state.users, directoryUser],
-    authError: null,
-  };
-}
+      return {
+        ...state,
+        isAuthenticated: true,
+        currentUser: newUser,
+        users: exists ? state.users : [...state.users, directoryUser],
+        authError: null,
+      };
+    }
+    case 'LOGIN_SUCCESS': {
+      return {
+        ...state,
+        isAuthenticated: true,
+        currentUser: action.payload.user,
+        authToken: action.payload.token,
+        authError: null,
+      };
+    }
+    case 'SET_AUTH_TOKEN':
+      return { ...state, authToken: action.payload };
+    case 'AUTH_ERROR':
+      return { ...state, authError: action.payload };
     case 'LOGOUT':
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('authToken');
+      }
       return {
         ...state,
         isAuthenticated: false,
         currentUser: null,
+        authToken: null,
         currentView: 'home',
         showUserMenu: false,
       };
@@ -358,6 +361,23 @@ function reducer(state: AppState, action: Action): AppState {
         ...state,
         projects: state.projects.filter((p) => p.id !== action.payload),
         currentProjectId: state.currentProjectId === action.payload ? null : state.currentProjectId,
+      };
+    }
+   
+      case 'BOOTSTRAP': {
+      return {
+        ...state,
+        users: action.payload.users,
+        projects: action.payload.projects,
+        tasks: action.payload.tasks.map((t) => ({
+          ...t,
+          collaboratorIds: t.collaboratorIds ?? [],
+          checklist: t.checklist ?? [],
+        })),
+        goals: action.payload.goals,
+        inbox: action.payload.inbox,
+        // opcional: si no quieres forzar un proyecto al cargar:
+        currentProjectId: action.payload.projects[0]?.id ?? null,
       };
     }
 
@@ -709,6 +729,66 @@ const AppContext = createContext<{
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
+
+  // Check for existing token on mount
+  useEffect(() => {
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      dispatch({ type: 'SET_AUTH_TOKEN', payload: token });
+    }
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      const token = state.authToken || localStorage.getItem('authToken');
+      
+      if (!token) {
+        console.log('No auth token, skipping bootstrap');
+        return;
+      }
+
+      try {
+        // First, get the current user from /api/auth/me
+        const userRes = await fetch('/api/auth/me', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!userRes.ok) {
+          if (userRes.status === 401 || userRes.status === 403) {
+            console.warn('Token expired or invalid, clearing auth');
+            localStorage.removeItem('authToken');
+            dispatch({ type: 'LOGOUT' });
+            return;
+          }
+          throw new Error(`HTTP ${userRes.status}`);
+        }
+
+        const userData = await userRes.json();
+        dispatch({ type: 'LOGIN_SUCCESS', payload: { user: userData.user, token } });
+
+        // Then, get the bootstrap data
+        const res = await fetch('/api/bootstrap', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        
+        const data = await res.json();
+
+        dispatch({ type: 'BOOTSTRAP', payload: data });
+        
+        console.log('✅ BOOTSTRAP loaded from API');
+      } catch (err) {
+        console.warn('⚠️ BOOTSTRAP failed, using local initial data', err);
+      }
+    })();
+  }, [state.authToken]);
 
   // Apply theme to document
   useEffect(() => {

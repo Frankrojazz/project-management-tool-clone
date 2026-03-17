@@ -15,12 +15,14 @@ import {
   KeyRound,
   CreditCard,
   Info,
+  Users,
 } from 'lucide-react';
 import { cn } from '../utils/cn';
 import type { LanguageCode, ThemeMode } from '../types';
 import { getLanguageName } from '../i18n';
+import { MembersSection } from './project/MembersSection';
 
-type SettingsTab = 'profile' | 'notifications' | 'display' | 'privacy' | 'account' | 'about';
+type SettingsTab = 'profile' | 'notifications' | 'display' | 'privacy' | 'account' | 'about' | 'members';
 
 export function SettingsView() {
   const { state, dispatch } = useApp();
@@ -36,6 +38,7 @@ export function SettingsView() {
     { id: 'display', label: 'Appearance', icon: <Monitor size={18} /> },
     { id: 'privacy', label: 'Privacy', icon: <Shield size={18} /> },
     { id: 'account', label: 'Account', icon: <KeyRound size={18} /> },
+    { id: 'members', label: 'Project Members', icon: <Users size={18} /> },
     { id: 'about', label: 'About', icon: <Info size={18} /> },
   ];
 
@@ -158,7 +161,7 @@ export function SettingsView() {
             )}
 
             {activeTab === 'display' && (
-              <SettingsCard title="Appearance" description="Customize how Projectify looks and feels">
+              <SettingsCard title="Appearance" description="Customize how FC Manager looks and feels">
                 {/* Theme Selection */}
                 <div className="mb-8">
                   <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">Theme</h3>
@@ -434,6 +437,19 @@ export function SettingsView() {
               </SettingsCard>
             )}
 
+            {activeTab === 'members' && (
+              <SettingsCard title="Project Members" description="Manage team members for the current project">
+                {state.currentProjectId ? (
+                  <MembersSection projectId={state.currentProjectId} isOwner={true} />
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <Users className="h-12 w-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
+                    <p>Select a project to manage its members</p>
+                  </div>
+                )}
+              </SettingsCard>
+            )}
+
             {activeTab === 'about' && (
               <SettingsCard title="About" description="Application information">
                 <div className="space-y-6">
@@ -442,7 +458,7 @@ export function SettingsView() {
                       P
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">Projectify</h3>
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">FC Manager</h3>
                       <p className="text-sm text-gray-500 dark:text-gray-400">Project Management Platform</p>
                       <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Version 2.0.0</p>
                     </div>
@@ -462,7 +478,7 @@ export function SettingsView() {
 
                   <div className="pt-6 border-t border-gray-100 dark:border-gray-700 text-center">
                     <p className="text-xs text-gray-400 dark:text-gray-500">
-                      © 2025 Projectify. Built with React + TypeScript + Tailwind CSS
+                      © 2025 FC Manager. Built with React + TypeScript + Tailwind CSS
                     </p>
                   </div>
                 </div>

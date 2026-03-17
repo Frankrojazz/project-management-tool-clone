@@ -20,8 +20,14 @@ import { cn } from '../utils/cn';
 export function TaskDetail() {
   const { state, dispatch } = useApp();
   const task = state.tasks.find((t) => t.id === state.selectedTaskId);
+  const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
 
   if (!task) return null;
+
+  const getAuthHeaders = () => ({
+    'Content-Type': 'application/json',
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+  });
 
   const project = state.projects.find((p) => p.id === task.projectId);
   const completedSubtasks = task.subtasks.filter((s) => s.completed).length;
@@ -42,31 +48,103 @@ export function TaskDetail() {
     });
   };
 
-  const handleStatusChange = (status: TaskStatus) => {
-    dispatch({
-      type: 'MOVE_TASK',
-      payload: { taskId: task.id, status },
-    });
+  const handleStatusChange = async (status: TaskStatus) => {
+    try {
+      const res = await fetch(`/api/tasks/${task.id}`, {
+        method: 'PATCH',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ status }),
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const updated = await res.json();
+
+      dispatch({
+        type: 'UPDATE_TASK',
+        payload: { id: task.id, updates: { status: updated.status, completed: updated.completed } },
+      });
+    } catch (err) {
+      console.error(err);
+      // Fallback to local update
+      dispatch({
+        type: 'UPDATE_TASK',
+        payload: {
+          id: task.id,
+          updates: {
+            status,
+            completed: status === 'done',
+          },
+        },
+      });
+    }
   };
 
-  const handlePriorityChange = (priority: Priority) => {
+ const handlePriorityChange = async (priority: Priority) => {
+  try {
+    const res = await fetch(`/api/tasks/${task.id}`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ priority }),
+    });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const updated = await res.json();
+
+    dispatch({
+      type: 'UPDATE_TASK',
+      payload: { id: task.id, updates: { priority: updated.priority } },
+    });
+  } catch (err) {
+    console.error(err);
+    // Fallback to local update
     dispatch({
       type: 'UPDATE_TASK',
       payload: { id: task.id, updates: { priority } },
     });
-  };
+  }
+};
 
-const handleAssigneesChange = (assigneeIds: string[]) => {
-  dispatch({
-    type: 'UPDATE_TASK',
-    payload: {
-      id: task.id,
-      updates: {
+const handleAssigneesChange = async (assigneeIds: string[]) => {
+  try {
+    const res = await fetch(`/api/tasks/${task.id}`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
         assigneeIds,
-        assigneeId: assigneeIds[0] ?? null, // compat con vistas viejas
+        assigneeId: assigneeIds[0] ?? null,
+      }),
+    });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const updated = await res.json();
+
+    dispatch({
+      type: 'UPDATE_TASK',
+      payload: {
+        id: task.id,
+        updates: {
+          assigneeIds: updated.assigneeIds ?? assigneeIds,
+          assigneeId: updated.assigneeId ?? (assigneeIds[0] ?? null),
+        },
       },
-    },
-  });
+    });
+  } catch (err) {
+    console.error(err);
+    // Fallback to local update
+    dispatch({
+      type: 'UPDATE_TASK',
+      payload: {
+        id: task.id,
+        updates: {
+          assigneeIds,
+          assigneeId: assigneeIds[0] ?? null,
+        },
+      },
+    });
+  }
 };
 
   const handleGoalChange = (goalId: string | undefined) => {

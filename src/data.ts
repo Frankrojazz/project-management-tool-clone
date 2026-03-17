@@ -1,11 +1,11 @@
-import { Goal, InboxItem, Project, Task, User } from './types';
+import type { Goal, InboxItem, Project, Task, User } from './types';
 
 export const users: User[] = [
-  { id: 'u1', name: 'Sarah Chen', avatar: 'SC', color: '#8B5CF6', type: 'human', email: 'sarah@projectify.io' },
-  { id: 'u2', name: 'Alex Rivera', avatar: 'AR', color: '#3B82F6', type: 'human', email: 'alex@projectify.io' },
-  { id: 'u3', name: 'Jordan Lee', avatar: 'JL', color: '#10B981', type: 'human', email: 'jordan@projectify.io' },
-  { id: 'u4', name: 'Morgan Kim', avatar: 'MK', color: '#F59E0B', type: 'human', email: 'morgan@projectify.io' },
-  { id: 'u5', name: 'Taylor Swift', avatar: 'TS', color: '#EF4444', type: 'human', email: 'taylor@projectify.io' },
+  { id: 'u1', name: 'Sarah Chen', avatar: 'SC', color: '#8B5CF6', type: 'human', email: 'sarah@fcmanager.io' },
+  { id: 'u2', name: 'Alex Rivera', avatar: 'AR', color: '#3B82F6', type: 'human', email: 'alex@fcmanager.io' },
+  { id: 'u3', name: 'Jordan Lee', avatar: 'JL', color: '#10B981', type: 'human', email: 'jordan@fcmanager.io' },
+  { id: 'u4', name: 'Morgan Kim', avatar: 'MK', color: '#F59E0B', type: 'human', email: 'morgan@fcmanager.io' },
+  { id: 'u5', name: 'Taylor Swift', avatar: 'TS', color: '#EF4444', type: 'human', email: 'taylor@fcmanager.io' },
 
   // GPT Collaborators (virtual, no login)
   {
@@ -17,7 +17,7 @@ export const users: User[] = [
     responsibilities:
       'Plan sprints, write user stories, clarify requirements, create acceptance criteria, and keep tasks aligned to goals.',
     promptTemplate:
-      'You are PM GPT for Projectify. Provide a clear plan with scope, milestones, risks, and acceptance criteria. Output in Markdown with headings and checklists.',
+      'You are PM GPT for FC Manager. Provide a clear plan with scope, milestones, risks, and acceptance criteria. Output in Markdown with headings and checklists.',
     links: [
       { label: 'Product Brief', url: 'https://example.com/product-brief' },
       { label: 'Roadmap', url: 'https://example.com/roadmap' },

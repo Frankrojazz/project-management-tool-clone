@@ -1,10 +1,25 @@
-node_modules
-dist
+# dependencies
+node_modules/
+
+# build
+dist/
+
+# env
 .env
 .env.local
+
+# macOS junk
 .DS_Store
+**/.DS_Store
 
-projectify.zip
-projectify/
+# vite cache
+.vite/
+node_modules/.vite/
+
+# server junk
+server/.DS_Store
+
+# misc
+factocero-manager.zip
+factocero-manager/
 .vscode/
-

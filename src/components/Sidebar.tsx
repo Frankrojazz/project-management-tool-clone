@@ -52,6 +52,7 @@ export function Sidebar() {
         icon: "📁",
         description: "",
         isFavorite: false,
+        memberIds: [],
       },
     });
   };
