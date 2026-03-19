@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useApp } from '../store';
 import { COLUMNS, PRIORITY_CONFIG, type Priority, type TaskStatus } from '../types';
 import { buildApiUrl } from '../lib/api';
+import toast from 'react-hot-toast';
 
 export function NewTaskModal() {
   const { state, dispatch } = useApp();
@@ -60,7 +61,7 @@ export function NewTaskModal() {
   const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
   if (!title.trim()) return;
-  if (goalId && !keyResultId) return alert('Key Result is required when Goal is selected');
+  if (goalId && !keyResultId) return toast.error('Key Result is required when Goal is selected');
 
   const token = localStorage.getItem('authToken');
 
@@ -107,7 +108,7 @@ export function NewTaskModal() {
     setKeyResultId('');
   } catch (err) {
     console.error(err);
-    alert('No se pudo crear la tarea (backend). Revisa consola/terminal.');
+    toast.error('No se pudo crear la tarea. Revisa la consola.');
   }
 };
 
