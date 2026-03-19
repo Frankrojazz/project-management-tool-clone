@@ -3,6 +3,7 @@ import { UserPlus, Users, Loader2, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { InviteModal } from './InviteModal';
 import { MemberItem } from './MemberItem';
+import { buildApiUrl } from '../../lib/api';
 
 interface Member {
   id: string;
@@ -30,7 +31,7 @@ export function MembersSection({ projectId }: MembersSectionProps) {
       setLoading(true);
       const token = localStorage.getItem('authToken');
       
-      const res = await fetch(`/api/projects/${projectId}/members`, {
+      const res = await fetch(buildApiUrl(`/api/projects/${projectId}/members`), {
         headers: {
           'Authorization': `Bearer ${token}`,
         },

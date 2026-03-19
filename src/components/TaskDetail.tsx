@@ -16,6 +16,7 @@ import {
 import { useApp } from '../store';
 import { COLUMNS, PRIORITY_CONFIG, type Priority, type TaskStatus } from '../types';
 import { cn } from '../utils/cn';
+import { buildApiUrl } from '../lib/api';
 
 export function TaskDetail() {
   const { state, dispatch } = useApp();
@@ -50,7 +51,7 @@ export function TaskDetail() {
 
   const handleStatusChange = async (status: TaskStatus) => {
     try {
-      const res = await fetch(`/api/tasks/${task.id}`, {
+      const res = await fetch(buildApiUrl(`/api/tasks/${task.id}`), {
         method: 'PATCH',
         headers: getAuthHeaders(),
         body: JSON.stringify({ status }),
@@ -82,7 +83,7 @@ export function TaskDetail() {
 
  const handlePriorityChange = async (priority: Priority) => {
   try {
-    const res = await fetch(`/api/tasks/${task.id}`, {
+    const res = await fetch(buildApiUrl(`/api/tasks/${task.id}`), {
       method: 'PATCH',
       headers: getAuthHeaders(),
       body: JSON.stringify({ priority }),
@@ -108,7 +109,7 @@ export function TaskDetail() {
 
 const handleAssigneesChange = async (assigneeIds: string[]) => {
   try {
-    const res = await fetch(`/api/tasks/${task.id}`, {
+    const res = await fetch(buildApiUrl(`/api/tasks/${task.id}`), {
       method: 'PATCH',
       headers: getAuthHeaders(),
       body: JSON.stringify({

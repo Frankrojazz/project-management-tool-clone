@@ -2,6 +2,7 @@ import { X } from 'lucide-react';
 import { useState } from 'react';
 import { useApp } from '../store';
 import { COLUMNS, PRIORITY_CONFIG, type Priority, type TaskStatus } from '../types';
+import { buildApiUrl } from '../lib/api';
 
 export function NewTaskModal() {
   const { state, dispatch } = useApp();
@@ -64,7 +65,7 @@ export function NewTaskModal() {
   const token = localStorage.getItem('authToken');
 
   try {
-    const res = await fetch('/api/tasks', {
+    const res = await fetch(buildApiUrl('/api/tasks'), {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',

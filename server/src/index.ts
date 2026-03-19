@@ -155,7 +155,7 @@ app.post("/api/auth/register", registerRateLimiter, async (req, res) => {
       VALUES (?, ?, ?, ?, ?, ?, 'member', datetime('now'))
     `).run(userId, name, email, hashedPassword, avatar, color);
 
-    const user = db.prepare("SELECT id, name, email, avatar, color, role, joined_date as joinedDate FROM users WHERE id = ?").get(userId);
+    const user = db.prepare("SELECT id, name, email, avatar, color, role, joined_date as joinedDate FROM users WHERE id = ?").get(userId) as any;
 
     const token = jwt.sign(
       { userId: user.id, email: user.email },

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import logoPng from "../assets/logo.png";
 import { useApp } from '../store';
+import { buildApiUrl } from '../lib/api';
 import {
   Eye,
   EyeOff,
@@ -63,7 +64,7 @@ export function LoginPage() {
           return;
         }
 
-        const res = await fetch('/api/auth/register', {
+        const res = await fetch(buildApiUrl('/api/auth/register'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name, email, password }),
@@ -79,7 +80,7 @@ export function LoginPage() {
 
         handleLoginSuccess(data.token, data.user);
       } else {
-        const res = await fetch('/api/auth/login', {
+        const res = await fetch(buildApiUrl('/api/auth/login'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password }),
@@ -108,7 +109,7 @@ export function LoginPage() {
     setPassword('demo123');
 
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch(buildApiUrl('/api/auth/login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: 'sarah@projectify.io', password: 'demo123' }),

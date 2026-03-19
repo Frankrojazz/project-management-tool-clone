@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Loader2, Sparkles, ArrowRight, FolderPlus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useApp } from '../store';
+import { buildApiUrl } from '../lib/api';
 
 export function OnboardingPage() {
   const { dispatch } = useApp();
@@ -21,7 +22,7 @@ export function OnboardingPage() {
     try {
       const token = localStorage.getItem('authToken');
       
-      const res = await fetch('/api/projects', {
+      const res = await fetch(buildApiUrl('/api/projects'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

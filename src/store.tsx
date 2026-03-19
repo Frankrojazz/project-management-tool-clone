@@ -2,6 +2,7 @@ import React, { createContext, useContext, useReducer, useEffect, type ReactNode
 import { initialTasks, projects as initialProjects, users, initialGoals, initialInbox } from './data';
 import type { NavigationView, Project, Task, TaskStatus, ViewMode, Goal, InboxItem, ThemeMode, LanguageCode, User, Deliverable } from './types';
 import { getTranslations, type Translations } from './i18n';
+import { buildApiUrl } from './lib/api';
 
 export interface AuthUser {
   id: string;
@@ -766,7 +767,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       try {
         // First, get the current user from /api/auth/me
-        const userRes = await fetch('/api/auth/me', {
+        const userRes = await fetch(buildApiUrl('/api/auth/me'), {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -786,7 +787,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         dispatch({ type: 'LOGIN_SUCCESS', payload: { user: userData.user, token } });
 
         // Then, get the bootstrap data
-        const res = await fetch('/api/bootstrap', {
+        const res = await fetch(buildApiUrl('/api/bootstrap'), {
           headers: {
             'Authorization': `Bearer ${token}`
           }

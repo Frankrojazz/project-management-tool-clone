@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { X, Send, Loader2, Mail, Copy, Check, Link } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { buildApiUrl } from '../../lib/api';
 
 interface InviteModalProps {
   projectId: string;
@@ -28,7 +29,7 @@ export function InviteModal({ projectId, onClose, onSuccess, onError }: InviteMo
     try {
       const token = localStorage.getItem('authToken');
       
-      const res = await fetch(`/api/projects/${projectId}/invite`, {
+      const res = await fetch(buildApiUrl(`/api/projects/${projectId}/invite`), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

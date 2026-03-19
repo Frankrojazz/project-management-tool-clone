@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Loader2, CheckCircle, XCircle, ArrowRight, LogIn, Sparkles, ArrowLeft, Home } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { buildApiUrl } from '../lib/api';
 
 interface InviteData {
   projectName: string;
@@ -33,7 +34,7 @@ export function AcceptInvitePage() {
 
   const validateInvite = async (token: string) => {
     try {
-      const res = await fetch(`/api/invitations/verify/${token}`);
+      const res = await fetch(buildApiUrl(`/api/invitations/verify/${token}`));
       const data = await res.json();
 
       if (!res.ok) {
@@ -45,7 +46,7 @@ export function AcceptInvitePage() {
       // Check if already a member (from previous session)
       const authToken = localStorage.getItem('authToken');
       if (authToken) {
-        const memberCheck = await fetch(`/api/projects/${data.project?.id}/members`, {
+        const memberCheck = await fetch(buildApiUrl(`/api/projects/${data.project?.id}/members`), {
           headers: { 'Authorization': `Bearer ${authToken}` }
         });
         if (memberCheck.ok) {
@@ -121,7 +122,7 @@ export function AcceptInvitePage() {
     setStatus('accepting');
 
     try {
-      const res = await fetch(`/api/invitations/${token}/accept`, {
+      const res = await fetch(buildApiUrl(`/api/invitations/${token}/accept`), {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${authToken}`,

@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "NODE_OPTIONS=--experimental-specifier-resolution=node ts-node-dev --respawn --transpile-only src/index.ts",
-    "build": "tsc",
+    "build": "tsc -p tsconfig.prod.json && cp -r src/middleware dist/ && mkdir -p dist/data",
     "start": "node dist/index.js"
   },
   "keywords": [],
@@ -27,6 +27,7 @@
     "resend": "^4.1.0"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/express-rate-limit": "^5.1.3",
