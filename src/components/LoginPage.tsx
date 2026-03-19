@@ -131,8 +131,42 @@ export function LoginPage() {
     }
   };
 
+  // ============================================
+  // TODO: OAuth Implementation
+  // ============================================
+  // 1. Backend needs OAuth routes:
+  //    GET  /api/auth/google         - redirect to Google
+  //    GET  /api/auth/google/callback - handle callback
+  //    GET  /api/auth/github         - redirect to GitHub
+  //    GET  /api/auth/github/callback - handle callback
+  //
+  // 2. Environment variables needed:
+  //    GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+  //    GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET
+  //
+  // 3. Implement these functions with real OAuth flow:
+  // ============================================
+
+  const loginWithGoogle = () => {
+    // TODO: Implement OAuth flow
+    // window.location.href = '/api/auth/google';
+    toast.error('Google login: Próximamente disponible');
+  };
+
+  const loginWithGithub = () => {
+    // TODO: Implement OAuth flow
+    // window.location.href = '/api/auth/github';
+    toast.error('GitHub login: Próximamente disponible');
+  };
+
   const handleSocialLogin = (provider: string) => {
-    toast.error(`${provider} login: Próximamente disponible`);
+    if (provider === 'Google') {
+      loginWithGoogle();
+    } else if (provider === 'GitHub') {
+      loginWithGithub();
+    } else {
+      toast.error(`${provider}: Próximamente disponible`);
+    }
   };
 
   return (
