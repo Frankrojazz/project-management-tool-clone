@@ -5,6 +5,9 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import Database from "better-sqlite3";
 import morgan from "morgan";
+import passport from "passport";
+import { initializePassport } from "./auth/passport";
+import { setupOAuthRoutes } from "./auth/routes";
 import { 
   securityMiddleware, 
   rateLimiter, 
@@ -66,6 +69,12 @@ const PORT = Number(process.env.PORT) || 4000;
 const db = new Database("data/projectify.db");
 
 db.pragma("journal_mode = WAL");
+
+// Initialize Passport OAuth
+initializePassport(db);
+app.use(passport.initialize());
+const oauthRouter = setupOAuthRoutes(app, db);
+app.use('/auth', oauthRouter);
 
 app.get('/api/health', (req, res) => {
   res.status(200).json({ ok: true, service: 'fc-manager-api' });
