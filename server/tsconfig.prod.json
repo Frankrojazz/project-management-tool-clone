@@ -13,8 +13,7 @@
     "verbatimModuleSyntax": false,
     "allowSyntheticDefaultImports": true,
     "noImplicitAny": false,
-    "strict": false,
-    "types": ["node"]
+    "strict": false
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.ts"]
