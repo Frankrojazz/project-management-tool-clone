@@ -1,8 +1,9 @@
-import { Plus, GripVertical } from 'lucide-react';
+import { Plus, GripVertical, CheckSquare } from 'lucide-react';
 import { useApp, users } from '../store';
 import { COLUMNS, PRIORITY_CONFIG, type Task, type TaskStatus } from '../types';
 import { cn } from '../utils/cn';
 import { useState } from 'react';
+import { EmptyState } from './ui/EmptyState';
 
 export function BoardView({ tasks }: { tasks: Task[] }) {
   const { dispatch } = useApp();
@@ -38,21 +39,33 @@ export function BoardView({ tasks }: { tasks: Task[] }) {
 
   return (
     <div className="flex gap-4 overflow-x-auto p-6 pb-8">
-      {COLUMNS.map((column) => {
-        const columnTasks = getColumnTasks(column.id);
-        return (
-          <div
-            key={column.id}
-            className={cn(
-              'flex w-80 min-w-[320px] flex-col rounded-xl transition-colors',
-              dragOverColumn === column.id 
-                ? 'bg-violet-50 dark:bg-violet-950/30' 
-                : 'bg-gray-100 dark:bg-gray-800/50'
-            )}
-            onDragOver={(e) => handleDragOver(e, column.id)}
-            onDrop={(e) => handleDrop(e, column.id)}
-            onDragLeave={() => setDragOverColumn(null)}
-          >
+      {tasks.length === 0 ? (
+        <div className="flex-1">
+          <EmptyState
+            icon={<CheckSquare size={32} />}
+            title="No hay tareas todavía"
+            description="Crea tu primera tarea para empezar a organizar tu trabajo"
+            actionLabel="Crear tarea"
+            onAction={() => dispatch({ type: 'SHOW_NEW_TASK_MODAL', payload: { show: true, status: 'todo' } })}
+          />
+        </div>
+      ) : (
+        <div className="flex gap-4">
+          {COLUMNS.map((column) => {
+            const columnTasks = getColumnTasks(column.id);
+            return (
+              <div
+                key={column.id}
+                className={cn(
+                  'flex w-80 min-w-[320px] flex-col rounded-xl transition-colors',
+                  dragOverColumn === column.id 
+                    ? 'bg-violet-50 dark:bg-violet-950/30' 
+                    : 'bg-gray-100 dark:bg-gray-800/50'
+                )}
+                onDragOver={(e) => handleDragOver(e, column.id)}
+                onDrop={(e) => handleDrop(e, column.id)}
+                onDragLeave={() => setDragOverColumn(null)}
+              >
             {/* Column Header */}
             <div className="flex items-center justify-between px-4 py-3">
               <div className="flex items-center gap-2.5">
@@ -98,6 +111,8 @@ export function BoardView({ tasks }: { tasks: Task[] }) {
           </div>
         );
       })}
+      </div>
+      )}
     </div>
   );
 }
