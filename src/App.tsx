@@ -1,4 +1,5 @@
 import { AppProvider, useApp } from './store';
+import { useCurrentUser } from './context/AuthContext';
 import { LoginPage } from './components/LoginPage';
 import { OnboardingPage } from './components/OnboardingPage';
 import { Sidebar } from './components/Sidebar';
@@ -23,6 +24,7 @@ import { useEffect, useState } from 'react';
 
 function AppContent() {
   const { state } = useApp();
+  const { user, loading: authLoading } = useCurrentUser();
   const [bootstrapped, setBootstrapped] = useState(false);
 
   // Check for onboarding flag in URL
@@ -36,8 +38,16 @@ function AppContent() {
     }
   }, [state.projects, state.tasks]);
 
-  // Show login page if not authenticated
-  if (!state.isAuthenticated) {
+  // Show login page if not authenticated (check both Supabase and legacy store)
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-violet-600 border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (!state.isAuthenticated && !user) {
     return <LoginPage />;
   }
 

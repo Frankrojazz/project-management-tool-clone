@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import logoPng from "../assets/logo.png";
-import { useApp } from '../store';
-import { buildApiUrl } from '../lib/api';
+import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import {
   Eye,
@@ -19,17 +18,15 @@ import {
   Chrome,
 } from 'lucide-react';
 
-const INVITE_TOKEN_KEY = 'pendingInviteToken';
-// utils
-
 export function LoginPage() {
-  const { state, dispatch } = useApp();
+  const { signIn, signUp, user, loading: authLoading } = useAuth();
   const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [showInviteMessage, setShowInviteMessage] = useState(false);
 
   useEffect(() => {
@@ -39,96 +36,52 @@ export function LoginPage() {
     }
   }, []);
 
-  const handleLoginSuccess = (token: string, user: any) => {
-    localStorage.setItem('authToken', token);
-    dispatch({ type: 'SET_AUTH_TOKEN', payload: token });
-    dispatch({ type: 'LOGIN_SUCCESS', payload: { user, token } });
-
-    const pendingInviteToken = localStorage.getItem(INVITE_TOKEN_KEY);
-    
-    if (pendingInviteToken) {
-      localStorage.removeItem(INVITE_TOKEN_KEY);
-      window.location.href = `/accept-invite?token=${pendingInviteToken}`;
+  useEffect(() => {
+    if (!authLoading && user) {
+      window.location.href = '/';
     }
-  };
+  }, [user, authLoading]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    dispatch({ type: 'CLEAR_AUTH_ERROR' });
+    setError(null);
     setIsLoading(true);
 
     try {
       if (isRegister) {
         if (!name.trim() || !email.trim() || !password.trim()) {
-          dispatch({ type: 'AUTH_ERROR', payload: 'Please fill in all fields' });
+          setError('Please fill in all fields');
           setIsLoading(false);
           return;
         }
 
-        const res = await fetch(buildApiUrl('/api/auth/register'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, email, password }),
-        });
-
-        const data = await res.json();
-
-        if (!res.ok) {
-          dispatch({ type: 'AUTH_ERROR', payload: data.error || 'Registration failed' });
+        if (password.length < 6) {
+          setError('Password must be at least 6 characters');
           setIsLoading(false);
           return;
         }
 
-        handleLoginSuccess(data.token, data.user);
+        await signUp(email, password);
+        toast.success('Account created! Please check your email to verify.');
+        setIsRegister(false);
       } else {
-        const res = await fetch(buildApiUrl('/api/auth/login'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password }),
-        });
-
-        const data = await res.json();
-
-        if (!res.ok) {
-          dispatch({ type: 'AUTH_ERROR', payload: data.error || 'Invalid email or password. Use demo credentials above or create a new account.' });
-          setIsLoading(false);
-          return;
-        }
-
-        handleLoginSuccess(data.token, data.user);
+        await signIn(email, password);
+        toast.success('Welcome back!');
       }
-    } catch (err) {
-      dispatch({ type: 'AUTH_ERROR', payload: 'Connection error. Please try again.' });
+    } catch (err: any) {
+      setError(err.message || 'Authentication failed. Please try again.');
     }
 
     setIsLoading(false);
   };
 
   const handleDemoLogin = async () => {
+    setError(null);
     setIsLoading(true);
     setEmail('sarah@projectify.io');
     setPassword('demo123');
-
-    try {
-      const res = await fetch(buildApiUrl('/api/auth/login'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: 'sarah@projectify.io', password: 'demo123' }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        dispatch({ type: 'AUTH_ERROR', payload: data.error || 'Login failed' });
-        setIsLoading(false);
-        return;
-      }
-
-      handleLoginSuccess(data.token, data.user);
-    } catch (err) {
-      dispatch({ type: 'AUTH_ERROR', payload: 'Connection error. Please try again.' });
-      setIsLoading(false);
-    }
+    toast.error('Demo account requires backend. Use your Supabase credentials.');
+    setIsLoading(false);
   };
 
   // ============================================
@@ -328,7 +281,7 @@ export function LoginPage() {
                   value={email}
                   onChange={(e) => {
                     setEmail(e.target.value);
-                    if (state.authError) dispatch({ type: 'CLEAR_AUTH_ERROR' });
+                    if (error) setError(null);
                   }}
                   placeholder="you@example.com"
                   className="w-full rounded-xl border border-gray-200 bg-white pl-10 pr-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition-all"
@@ -354,7 +307,7 @@ export function LoginPage() {
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value);
-                    if (state.authError) dispatch({ type: 'CLEAR_AUTH_ERROR' });
+                    if (error) setError(null);
                   }}
                   placeholder="Enter your password"
                   className="w-full rounded-xl border border-gray-200 bg-white pl-10 pr-11 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition-all"
@@ -372,12 +325,12 @@ export function LoginPage() {
             </div>
 
             {/* Error message */}
-            {state.authError && (
+            {error && (
               <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600 flex items-start gap-2">
                 <div className="h-4 w-4 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                   <span className="text-[10px] font-bold text-red-500">!</span>
                 </div>
-                {state.authError}
+                {error}
               </div>
             )}
 
@@ -433,7 +386,7 @@ export function LoginPage() {
             <button
               onClick={() => {
                 setIsRegister(!isRegister);
-                dispatch({ type: 'CLEAR_AUTH_ERROR' });
+                setError(null);
               }}
               className="text-violet-600 font-semibold hover:text-violet-700"
             >
