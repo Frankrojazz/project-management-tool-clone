@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import logoPng from "../assets/logo.png";
 import { useApp } from '../store';
 import { buildApiUrl } from '../lib/api';
+import toast from 'react-hot-toast';
 import {
   Eye,
   EyeOff,
@@ -130,8 +131,8 @@ export function LoginPage() {
     }
   };
 
-  const handleSocialLogin = async (provider: string) => {
-    dispatch({ type: 'AUTH_ERROR', payload: 'Social login not available. Use email registration instead.' });
+  const handleSocialLogin = (provider: string) => {
+    toast.error(`${provider} login: Próximamente disponible`);
   };
 
   return (
@@ -307,7 +308,7 @@ export function LoginPage() {
               <div className="flex items-center justify-between mb-1.5">
                 <label className="block text-sm font-medium text-gray-700">Password</label>
                 {!isRegister && (
-                  <button type="button" className="text-xs text-violet-600 hover:text-violet-700 font-medium">
+                  <button type="button" className="text-xs text-violet-600 hover:text-violet-700 font-medium" onClick={() => toast.error('Recuperar contraseña: Próximamente disponible')}>
                     Forgot password?
                   </button>
                 )}
