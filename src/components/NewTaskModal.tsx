@@ -7,7 +7,7 @@ export function NewTaskModal() {
   const { state, dispatch } = useApp();
     
   // --- Assignees list: project members + current user (if not in list) ---
-  const currentUserId = state.currentUser?.id ?? 'u1';
+  const currentUserId = state.currentUser?.id;
 
   const activeProjectId =
     state.currentView === 'project' && state.currentProjectId
@@ -51,7 +51,7 @@ export function NewTaskModal() {
 
   const projectId = state.currentView === 'project' && state.currentProjectId
     ? state.currentProjectId
-    : state.projects[0].id;
+    : state.projects[0]?.id;
 
   const selectedGoal = state.goals.find(g => g.id === goalId);
   const selectedKeyResults = selectedGoal ? selectedGoal.keyResults : [];

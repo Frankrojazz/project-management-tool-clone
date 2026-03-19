@@ -16,15 +16,14 @@ interface Member {
 
 interface MembersSectionProps {
   projectId: string;
-  isOwner?: boolean;
 }
 
-export function MembersSection({ projectId, isOwner: propIsOwner }: MembersSectionProps) {
+export function MembersSection({ projectId }: MembersSectionProps) {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showInviteModal, setShowInviteModal] = useState(false);
-  const [isOwner, setIsOwner] = useState<boolean>(propIsOwner ?? false);
+  const [isOwner, setIsOwner] = useState<boolean>(false);
 
   const fetchMembers = async () => {
     try {
@@ -48,7 +47,8 @@ export function MembersSection({ projectId, isOwner: propIsOwner }: MembersSecti
 
       const data = await res.json();
       setMembers(data.members);
-      setIsOwner(data.isOwner ?? propIsOwner ?? false);
+      setIsOwner(data.isOwner ?? false);
+      console.log('[MembersSection] isOwner from API:', data.isOwner, 'projectId:', projectId);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load members');

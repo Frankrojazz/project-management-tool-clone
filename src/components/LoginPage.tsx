@@ -88,7 +88,7 @@ export function LoginPage() {
         const data = await res.json();
 
         if (!res.ok) {
-          dispatch({ type: 'AUTH_ERROR', payload: data.error || 'Invalid email or password' });
+          dispatch({ type: 'AUTH_ERROR', payload: data.error || 'Invalid email or password. Use demo credentials above or create a new account.' });
           setIsLoading(false);
           return;
         }
@@ -104,14 +104,14 @@ export function LoginPage() {
 
   const handleDemoLogin = async () => {
     setIsLoading(true);
-    setEmail('sarah@fcmanager.io');
+    setEmail('sarah@projectify.io');
     setPassword('demo123');
 
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: 'sarah@fcmanager.io', password: 'demo123' }),
+        body: JSON.stringify({ email: 'sarah@projectify.io', password: 'demo123' }),
       });
 
       const data = await res.json();
@@ -412,18 +412,12 @@ export function LoginPage() {
               <div className="flex items-center gap-2">
                 <CheckCircle2 size={12} className="text-green-500" />
                 <span className="text-xs text-gray-600">
-                  <strong>demo@demo.com</strong> / <strong>demo</strong>
+                  <strong>sarah@projectify.io</strong> / <strong>demo123</strong>
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 size={12} className="text-green-500" />
-                <span className="text-xs text-gray-600">
-                  <strong>sarah@fcmanager.io</strong> / <strong>demo123</strong>
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 size={12} className="text-green-500" />
-                <span className="text-xs text-gray-600">Or register with any email</span>
+                <span className="text-xs text-gray-600">Or register a new account below</span>
               </div>
             </div>
           </div>

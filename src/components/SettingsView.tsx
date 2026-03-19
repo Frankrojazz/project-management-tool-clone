@@ -440,7 +440,7 @@ export function SettingsView() {
             {activeTab === 'members' && (
               <SettingsCard title="Project Members" description="Manage team members for the current project">
                 {state.currentProjectId ? (
-                  <MembersSection projectId={state.currentProjectId} isOwner={true} />
+                  <MembersSection projectId={state.currentProjectId} />
                 ) : (
                   <div className="text-center py-8 text-gray-500">
                     <Users className="h-12 w-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />

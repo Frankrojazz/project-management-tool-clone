@@ -8,7 +8,7 @@ export function InboxView() {
   console.log('INBOX DEBUG: InboxView rendered');
   
   // Filtrar inbox solo para el usuario actual
-  const currentUserId = state.currentUser?.id ?? 'u1';
+  const currentUserId = state.currentUser?.id ?? '';
   const userInbox = state.inbox.filter((i) => i.recipientId === currentUserId);
   const unreadCount = userInbox.filter((i) => !i.read).length;
 

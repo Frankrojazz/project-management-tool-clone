@@ -11,16 +11,47 @@ app.set('json spaces', 2);
 
 app.disable("etag");
 
-app.use(cors());
+const corsOptions = {
+  origin: (origin, callback) => {
+    const allowedOrigins = [
+      process.env.CLIENT_URL_DEV || "http://localhost:5173",
+      process.env.CLIENT_URL || "http://localhost:5173",
+      "https://*.vercel.app",
+    ].filter(Boolean);
+
+    if (!origin || allowedOrigins.some(allowed => 
+      origin === allowed || 
+      (allowed.includes('*') && new RegExp(allowed.replace('*', '.*')).test(origin))
+    )) {
+      callback(null, true);
+    } else {
+      console.warn(`CORS blocked origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
+app.use(cors(corsOptions));
 app.use(express.json({ limit: '10kb' }));
 
 // ============================================
 // Configuration
 // ============================================
 
-const JWT_SECRET = process.env.JWT_SECRET || "factocero-manager-super-secret-key-change-in-production";
+if (!process.env.JWT_SECRET) {
+  console.error('❌ FATAL: JWT_SECRET environment variable is required');
+  console.error('   Please set JWT_SECRET in your .env file');
+  console.error('   Example: JWT_SECRET=your-secure-random-string-at-least-32-chars');
+  process.exit(1);
+}
+
+const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
-const DB_PATH = path.join(__dirname, '..', 'data', 'factocero-manager.db');
+const PORT = process.env.PORT || 4000;
+const DB_PATH = path.join(__dirname, '..', 'data', 'projectify.db');
 
 // Ensure data directory exists
 const dataDir = path.join(__dirname, '..', 'data');
@@ -249,7 +280,7 @@ if (userCount.count === 0) {
   insertGoal.run('g1', 'Launch new website', 'Complete website redesign', 'on_track', 65, 'Sarah Chen', '2025-08-01', '["p1"]', 'u1');
 
   console.log('✅ Initial data seeded');
-  console.log('📝 Demo login: sarah@fcmanager.io / demo123');
+  console.log('📝 Demo login: sarah@projectify.io / demo123');
 }
 
 // ============================================
@@ -502,11 +533,17 @@ app.get("/api/auth/me", authenticateToken, (req, res) => {
 // Bootstrap - get all data (authenticated)
 app.get("/api/bootstrap", authenticateToken, (req, res) => {
   try {
+    const userId = req.userId;
     const users = getAll('SELECT * FROM users').map(u => transformUser(u));
-    const projects = getAll('SELECT * FROM projects').map(transformProject);
+    const projects = getAll(`
+      SELECT DISTINCT p.* FROM projects p
+      INNER JOIN project_members pm ON p.id = pm.project_id
+      WHERE pm.user_id = ?
+    `, [userId]).map(transformProject);
+    const projectIds = projects.map(p => p.id);
     const tasks = getAll('SELECT * FROM tasks ORDER BY created_at DESC').map(transformTask);
     const goals = getAll('SELECT * FROM goals').map(transformGoal);
-    const inbox = getAll('SELECT * FROM inbox WHERE recipient_id = ? OR recipient_id IS NULL ORDER BY created_at DESC', [req.userId]).map(transformInbox);
+    const inbox = getAll('SELECT * FROM inbox WHERE recipient_id = ? OR recipient_id IS NULL ORDER BY created_at DESC', [userId]).map(transformInbox);
 
     res.setHeader("Cache-Control", "no-store");
     return res.json({ users, projects, tasks, goals, inbox });
@@ -1634,12 +1671,11 @@ app.post("/api/invites/accept", authenticateToken, (req, res) => {
 // Server Start
 // ============================================
 
-const PORT = Number(process.env.PORT) || 4000;
 app.listen(PORT, () => {
   console.log(`✅ API running on http://localhost:${PORT}`);
   console.log(`📦 Database: ${DB_PATH}`);
-  console.log(`🔐 JWT Secret: ${JWT_SECRET.substring(0, 10)}...`);
-  console.log(`📝 Demo login: sarah@fcmanager.io / demo123`);
+  console.log(`🔐 JWT authentication enabled`);
+  console.log(`📝 Demo login: sarah@projectify.io / demo123`);
 });
 
 // Graceful shutdown

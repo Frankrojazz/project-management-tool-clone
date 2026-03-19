@@ -1,10 +1,38 @@
-import { CheckCircle2, Clock, AlertTriangle, TrendingUp, FolderOpen, ArrowRight, Target, BarChart3, Inbox } from 'lucide-react';
+import { CheckCircle2, Clock, AlertTriangle, TrendingUp, FolderOpen, ArrowRight, Target, BarChart3, Inbox, Plus, Sparkles } from 'lucide-react';
 import { useApp, useTranslations } from '../store';
 import { cn } from '../utils/cn';
 
 export function HomeView() {
   const { state, dispatch } = useApp();
   const t = useTranslations();
+
+  const hasProjects = state.projects && state.projects.length > 0;
+
+  // If no projects, show empty state
+  if (!hasProjects) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="text-center max-w-md">
+          <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center mx-auto mb-6 shadow-lg shadow-violet-500/25">
+            <Sparkles className="h-10 w-10 text-white" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-3">
+            Welcome to FC Manager!
+          </h2>
+          <p className="text-gray-500 dark:text-gray-400 mb-8">
+            You don't have any projects yet. Let's create your first one to get started.
+          </p>
+          <button
+            onClick={() => window.location.href = '/?onboarding=true'}
+            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white rounded-xl font-semibold transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-violet-500/25"
+          >
+            <Plus className="h-5 w-5" />
+            Create First Project
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const greeting = (() => {
     const hour = new Date().getHours();
@@ -13,7 +41,7 @@ export function HomeView() {
     return t.goodEvening;
   })();
 
-  const myTasks = state.tasks.filter((t) => t.assigneeId === 'u1');
+  const myTasks = state.tasks.filter((t) => t.assigneeId === state.currentUser?.id);
   const completedTasks = myTasks.filter((t) => t.completed);
   const overdueTasks = myTasks.filter(
     (t) => t.dueDate && new Date(t.dueDate) < new Date() && !t.completed

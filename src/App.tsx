@@ -1,5 +1,6 @@
 import { AppProvider, useApp } from './store';
 import { LoginPage } from './components/LoginPage';
+import { OnboardingPage } from './components/OnboardingPage';
 import { Sidebar } from './components/Sidebar';
 import { BoardView } from './components/BoardView';
 import { ListView } from './components/ListView';
@@ -18,13 +19,36 @@ import { GptCollaboratorModal } from './components/GptCollaboratorModal';
 import { DeliverableModal } from './components/DeliverableModal';
 import { ProjectHeader } from './components/ProjectHeader';
 import { Toaster } from 'react-hot-toast';
+import { useEffect, useState } from 'react';
 
 function AppContent() {
   const { state } = useApp();
+  const [bootstrapped, setBootstrapped] = useState(false);
+
+  // Check for onboarding flag in URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const showOnboardingFromUrl = urlParams.get('onboarding') === 'true';
+
+  // Track when bootstrap completes
+  useEffect(() => {
+    if (state.projects.length > 0 || state.tasks.length > 0) {
+      setBootstrapped(true);
+    }
+  }, [state.projects, state.tasks]);
 
   // Show login page if not authenticated
   if (!state.isAuthenticated) {
     return <LoginPage />;
+  }
+
+  // Show onboarding if:
+  // 1. User has no projects (and bootstrap is done), OR
+  // 2. User manually navigated to ?onboarding=true
+  const hasProjects = state.projects && state.projects.length > 0;
+  const shouldShowOnboarding = (bootstrapped && !hasProjects) || showOnboardingFromUrl;
+
+  if (shouldShowOnboarding) {
+    return <OnboardingPage />;
   }
 
   const getFilteredTasks = () => {
@@ -34,8 +58,8 @@ function AppContent() {
     if (state.currentView === 'project' && state.currentProjectId) {
       tasks = tasks.filter((t) => t.projectId === state.currentProjectId);
     } else if (state.currentView === 'my_tasks') {
-    const me = state.currentUser?.id ?? 'u1';
-      tasks = tasks.filter((t) => t.assigneeId === me || (t.assigneeIds?.includes(me) ?? false));
+      const me = state.currentUser?.id;
+      tasks = me ? tasks.filter((t) => t.assigneeId === me || (t.assigneeIds?.includes(me) ?? false)) : [];
     }
 
     // Filter by search

@@ -28,7 +28,7 @@ export function DeliverableModal() {
         taskId,
         projectId: task.projectId,
         createdAt: new Date().toISOString(),
-        createdById: state.currentUser?.id ?? 'u1',
+        createdById: state.currentUser?.id ?? '',
         collaboratorId: collaboratorId || null,
         type,
         title: title.trim() || 'Untitled',

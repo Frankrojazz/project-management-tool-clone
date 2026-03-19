@@ -188,12 +188,12 @@ email: 'alex@fcmanager.io',
     email: 'demo@demo.com',
     password: 'demo',
     user: {
-      id: 'u1',
-      name: 'Sarah Chen',
+      id: 'u3',
+      name: 'Demo User',
       email: 'demo@demo.com',
-      avatar: 'SC',
-      color: '#8B5CF6',
-      role: 'Project Manager',
+      avatar: 'DU',
+      color: '#10B981',
+      role: 'Member',
       joinedDate: '2024-01-15',
     },
   },
@@ -216,7 +216,7 @@ const initialState: AppState = {
   projects: initialProjects,
   goals: initialGoals,
   inbox: initialInbox,
-  currentProjectId: 'p1',
+  currentProjectId: null,
   currentView: 'home',
   viewMode: 'board',
   searchQuery: '',
@@ -225,6 +225,19 @@ const initialState: AppState = {
   showNewTaskModal: false,
   newTaskStatus: 'todo',
 };
+
+function validateCurrentProjectId(projects: Project[], currentProjectId: string | null): string | null {
+  const projectIds = projects.map(p => p.id);
+  console.log('🔍 Validating currentProjectId:', { currentProjectId, projectIds, projectsCount: projects.length });
+  
+  if (!currentProjectId || !projectIds.includes(currentProjectId)) {
+    const newProjectId = projects.length > 0 ? projects[0].id : null;
+    console.log('⚠️ currentProjectId invalid, assigning:', newProjectId);
+    return newProjectId;
+  }
+  
+  return currentProjectId;
+}
 
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
@@ -345,9 +358,11 @@ function reducer(state: AppState, action: Action): AppState {
     case 'TOGGLE_SIDEBAR':
       return { ...state, sidebarCollapsed: !state.sidebarCollapsed };
     case 'ADD_PROJECT': {
+      const newProjects = [...state.projects, action.payload];
       return {
         ...state,
-        projects: [...state.projects, action.payload],
+        projects: newProjects,
+        currentProjectId: validateCurrentProjectId(newProjects, state.currentProjectId),
       };
     }
     case 'UPDATE_PROJECT': {
@@ -357,27 +372,29 @@ function reducer(state: AppState, action: Action): AppState {
       };
     }
     case 'DELETE_PROJECT': {
+      const remainingProjects = state.projects.filter((p) => p.id !== action.payload);
       return {
         ...state,
-        projects: state.projects.filter((p) => p.id !== action.payload),
-        currentProjectId: state.currentProjectId === action.payload ? null : state.currentProjectId,
+        projects: remainingProjects,
+        currentProjectId: validateCurrentProjectId(remainingProjects, 
+          state.currentProjectId === action.payload ? null : state.currentProjectId),
       };
     }
-   
-      case 'BOOTSTRAP': {
+    
+    case 'BOOTSTRAP': {
+      const apiProjects = action.payload.projects || [];
       return {
         ...state,
         users: action.payload.users,
-        projects: action.payload.projects,
-        tasks: action.payload.tasks.map((t) => ({
+        projects: apiProjects,
+        tasks: action.payload.tasks.map((t: any) => ({
           ...t,
           collaboratorIds: t.collaboratorIds ?? [],
           checklist: t.checklist ?? [],
         })),
         goals: action.payload.goals,
         inbox: action.payload.inbox,
-        // opcional: si no quieres forzar un proyecto al cargar:
-        currentProjectId: action.payload.projects[0]?.id ?? null,
+        currentProjectId: validateCurrentProjectId(apiProjects, state.currentProjectId),
       };
     }
 
