@@ -38,7 +38,7 @@ function AppContent() {
     }
   }, [state.projects, state.tasks]);
 
-  // Show login page if not authenticated (check both Supabase and legacy store)
+  // Loading: show spinner while checking Supabase auth
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -47,7 +47,8 @@ function AppContent() {
     );
   }
 
-  if (!state.isAuthenticated && !user) {
+  // No user? Show login page (ONLY Supabase auth, no fallback)
+  if (!user) {
     return <LoginPage />;
   }
 
@@ -68,7 +69,7 @@ function AppContent() {
     if (state.currentView === 'project' && state.currentProjectId) {
       tasks = tasks.filter((t) => t.projectId === state.currentProjectId);
     } else if (state.currentView === 'my_tasks') {
-      const me = state.currentUser?.id;
+      const me = user.id;
       tasks = me ? tasks.filter((t) => t.assigneeId === me || (t.assigneeIds?.includes(me) ?? false)) : [];
     }
 

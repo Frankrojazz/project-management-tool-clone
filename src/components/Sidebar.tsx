@@ -39,10 +39,10 @@ export function Sidebar() {
 
   const favoriteProjects = state.projects.filter((p) => p.isFavorite);
   const otherProjects = state.projects.filter((p) => !p.isFavorite);
-  const currentUserId = state.currentUser?.id ?? '';
-  const unreadInbox = state.inbox.filter((i) => i.recipientId === currentUserId && !i.read).length;
 
   const { user } = useAuth();
+  const currentUserId = user?.id ?? '';
+  const unreadInbox = state.inbox.filter((i) => i.recipientId === currentUserId && !i.read).length;
 
   const createProject = async () => {
     if (!user) {

@@ -9,13 +9,10 @@ import {
   Lock,
   User,
   ArrowRight,
-  CheckCircle2,
   Zap,
   Target,
   BarChart3,
   Users,
-  Github,
-  Chrome,
 } from 'lucide-react';
 
 export function LoginPage() {
@@ -73,53 +70,6 @@ export function LoginPage() {
     }
 
     setIsLoading(false);
-  };
-
-  const handleDemoLogin = async () => {
-    setError(null);
-    setIsLoading(true);
-    setEmail('sarah@projectify.io');
-    setPassword('demo123');
-    toast.error('Demo account requires backend. Use your Supabase credentials.');
-    setIsLoading(false);
-  };
-
-  // ============================================
-  // TODO: OAuth Implementation
-  // ============================================
-  // 1. Backend needs OAuth routes:
-  //    GET  /api/auth/google         - redirect to Google
-  //    GET  /api/auth/google/callback - handle callback
-  //    GET  /api/auth/github         - redirect to GitHub
-  //    GET  /api/auth/github/callback - handle callback
-  //
-  // 2. Environment variables needed:
-  //    GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
-  //    GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET
-  //
-  // 3. Implement these functions with real OAuth flow:
-  // ============================================
-
-  const loginWithGoogle = () => {
-    // TODO: Implement OAuth flow
-    // window.location.href = '/api/auth/google';
-    toast.error('Google login: Próximamente disponible');
-  };
-
-  const loginWithGithub = () => {
-    // TODO: Implement OAuth flow
-    // window.location.href = '/api/auth/github';
-    toast.error('GitHub login: Próximamente disponible');
-  };
-
-  const handleSocialLogin = (provider: string) => {
-    if (provider === 'Google') {
-      loginWithGoogle();
-    } else if (provider === 'GitHub') {
-      loginWithGithub();
-    } else {
-      toast.error(`${provider}: Próximamente disponible`);
-    }
   };
 
   return (
@@ -224,33 +174,6 @@ export function LoginPage() {
                 </p>
               </div>
             )}
-          </div>
-
-          {/* Social Login */}
-          <div className="flex gap-3 mb-6">
-            <button
-              onClick={() => handleSocialLogin('Google')}
-              disabled={isLoading}
-              className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all disabled:opacity-50"
-            >
-              <Chrome size={18} className="text-blue-500" />
-              Google
-            </button>
-            <button
-              onClick={() => handleSocialLogin('GitHub')}
-              disabled={isLoading}
-              className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all disabled:opacity-50"
-            >
-              <Github size={18} />
-              GitHub
-            </button>
-          </div>
-
-          {/* Divider */}
-          <div className="flex items-center gap-4 mb-6">
-            <div className="flex-1 h-px bg-gray-200" />
-            <span className="text-xs text-gray-400 font-medium">OR</span>
-            <div className="flex-1 h-px bg-gray-200" />
           </div>
 
           {/* Form */}
@@ -370,16 +293,6 @@ export function LoginPage() {
             </button>
           </form>
 
-          {/* Demo Login */}
-          <button
-            onClick={handleDemoLogin}
-            disabled={isLoading}
-            className="w-full mt-3 flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-violet-200 bg-violet-50/50 px-4 py-2.5 text-sm font-medium text-violet-600 hover:bg-violet-50 hover:border-violet-300 transition-all disabled:opacity-50"
-          >
-            <Zap size={14} />
-            Try Demo Account (instant access)
-          </button>
-
           {/* Toggle form */}
           <p className="text-center text-sm text-gray-500 mt-6">
             {isRegister ? 'Already have an account? ' : "Don't have an account? "}
@@ -393,23 +306,6 @@ export function LoginPage() {
               {isRegister ? 'Sign In' : 'Sign Up'}
             </button>
           </p>
-
-          {/* Demo credentials hint */}
-          <div className="mt-6 rounded-xl bg-gray-100 p-4">
-            <p className="text-xs font-semibold text-gray-500 mb-2">Demo Credentials:</p>
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 size={12} className="text-green-500" />
-                <span className="text-xs text-gray-600">
-                  <strong>sarah@projectify.io</strong> / <strong>demo123</strong>
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 size={12} className="text-green-500" />
-                <span className="text-xs text-gray-600">Or register a new account below</span>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
