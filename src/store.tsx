@@ -847,10 +847,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // Update document title based on current project
   useEffect(() => {
-    const currentProject = state.projects.find(p => p.id === state.currentProjectId);
-    if (currentProject) {
-      document.title = `${currentProject.name} | FactoCero`;
-    } else {
+    try {
+      const projects = state.projects || [];
+      const currentProject = projects.find(p => p?.id === state.currentProjectId);
+      
+      if (currentProject?.name) {
+        document.title = `${currentProject.name} | FactoCero`;
+      } else {
+        document.title = 'FactoCero Manager';
+      }
+    } catch (error) {
+      console.warn('[Title] Failed to update document title:', error);
       document.title = 'FactoCero Manager';
     }
   }, [state.currentProjectId, state.projects]);
