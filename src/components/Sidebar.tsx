@@ -40,9 +40,13 @@ export function Sidebar() {
   const favoriteProjects = state.projects.filter((p) => p.isFavorite);
   const otherProjects = state.projects.filter((p) => !p.isFavorite);
 
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const currentUserId = user?.id ?? '';
   const unreadInbox = state.inbox.filter((i) => i.recipientId === currentUserId && !i.read).length;
+
+  const userDisplayName = profile?.full_name || profile?.email?.split('@')[0] || 'User';
+  const userInitials = userDisplayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  const userColor = '#8B5CF6';
 
   const createProject = async () => {
     if (!user) {
@@ -384,13 +388,13 @@ const deleteProject = (projectId: string, name: string) => {
               <div className="flex items-center gap-3">
                 <div
                   className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold text-white"
-                  style={{ backgroundColor: state.currentUser?.color ?? '#8B5CF6' }}
+                  style={{ backgroundColor: userColor }}
                 >
-                  {state.currentUser?.avatar ?? 'U'}
+                  {userInitials}
                 </div>
                 <div>
-                  <p className="text-sm font-semibold tracking-tight text-white">{state.currentUser?.name ?? 'User'}</p>
-                  <p className="text-xs text-gray-400">{state.currentUser?.email ?? ''}</p>
+                  <p className="text-sm font-semibold tracking-tight text-white">{userDisplayName}</p>
+                  <p className="text-xs text-gray-400">{profile?.email || user?.email || ''}</p>
                 </div>
               </div>
               <div className="flex items-center gap-1.5 mt-2">
@@ -447,15 +451,15 @@ const deleteProject = (projectId: string, name: string) => {
             <div className="relative">
               <div
                 className="flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium text-white"
-                style={{ backgroundColor: state.currentUser?.color ?? '#8B5CF6' }}
+                style={{ backgroundColor: userColor }}
               >
-                {state.currentUser?.avatar ?? 'U'}
+                {userInitials}
               </div>
               <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-gray-950 bg-green-500" />
             </div>
             <div className="flex-1 min-w-0 text-left">
-              <p className="text-sm font-medium text-white truncate">{state.currentUser?.name ?? 'User'}</p>
-              <p className="text-xs text-gray-500 truncate">{state.currentUser?.role ?? 'Team Member'}</p>
+              <p className="text-sm font-medium text-white truncate">{userDisplayName}</p>
+              <p className="text-xs text-gray-500 truncate">Team Member</p>
             </div>
             <MoreHorizontal size={16} className="text-gray-500" />
           </button>

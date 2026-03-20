@@ -1,10 +1,15 @@
 import { CheckCircle2, Clock, AlertTriangle, TrendingUp, FolderOpen, ArrowRight, Target, BarChart3, Inbox, Plus, Sparkles } from 'lucide-react';
 import { useApp, useTranslations } from '../store';
+import { useAuth } from '../context/AuthContext';
 import { cn } from '../utils/cn';
 
 export function HomeView() {
   const { state, dispatch } = useApp();
   const t = useTranslations();
+  const { user, profile } = useAuth();
+
+  const userDisplayName = profile?.full_name || profile?.email?.split('@')[0] || 'there';
+  const currentUserId = user?.id ?? '';
 
   const hasProjects = state.projects && state.projects.length > 0;
 
@@ -41,7 +46,7 @@ export function HomeView() {
     return t.goodEvening;
   })();
 
-  const myTasks = state.tasks.filter((t) => t.assigneeId === state.currentUser?.id);
+  const myTasks = state.tasks.filter((t) => t.assigneeId === currentUserId);
   const completedTasks = myTasks.filter((t) => t.completed);
   const overdueTasks = myTasks.filter(
     (t) => t.dueDate && new Date(t.dueDate) < new Date() && !t.completed
@@ -64,7 +69,7 @@ export function HomeView() {
     <div className="mx-auto max-w-5xl p-8">
       {/* Welcome */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{greeting}, {state.currentUser?.name?.split(' ')[0] ?? 'there'}</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{greeting}, {userDisplayName}</h1>
         <p className="mt-1 text-gray-500 dark:text-gray-400">{t.whatsHappening}</p>
       </div>
 
