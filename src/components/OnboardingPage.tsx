@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { Loader2, Sparkles, ArrowRight, FolderPlus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useApp } from '../store';
-import { buildApiUrl } from '../lib/api';
+import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 
 export function OnboardingPage() {
   const { dispatch } = useApp();
+  const { user } = useAuth();
   const [projectName, setProjectName] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -17,47 +19,62 @@ export function OnboardingPage() {
       return;
     }
 
+    if (!user) {
+      toast.error('You must be logged in');
+      return;
+    }
+
     setLoading(true);
 
+    console.log('[Onboarding] Creating project with:', {
+      name: projectName.trim(),
+      owner_id: user.id,
+      owner_id_type: typeof user.id,
+      is_valid_uuid: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(user.id)
+    });
+
     try {
-      const token = localStorage.getItem('authToken');
-      
-      const res = await fetch(buildApiUrl('/api/projects'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
+      const { data, error } = await supabase
+        .from('projects')
+        .insert({
           name: projectName.trim(),
-          description: 'My first project',
-          color: '#8B5CF6',
-          icon: '📁',
-        }),
-      });
+          owner_id: user.id,
+        })
+        .select()
+        .single();
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to create project');
+      if (error) {
+        console.error('[Onboarding] Supabase error:', error);
+        throw new Error(error.message || 'Failed to create project');
       }
+
+      console.log('[Onboarding] Project created:', data);
 
       toast.success('Project created!');
       
       dispatch({ 
         type: 'ADD_PROJECT', 
-        payload: data.project 
+        payload: {
+          id: data.id,
+          name: data.name,
+          description: data.description || '',
+          color: '#8B5CF6',
+          icon: '📁',
+          isFavorite: false,
+          memberIds: [],
+        }
       });
       
       dispatch({ 
         type: 'SET_VIEW', 
-        payload: { view: 'project', projectId: data.project.id } 
+        payload: { view: 'project', projectId: data.id } 
       });
 
       setTimeout(() => {
-        window.location.href = `/?project=${data.project.id}`;
+        window.location.href = `/?project=${data.id}`;
       }, 500);
     } catch (err) {
+      console.error('[Onboarding] Catch error:', err);
       toast.error(err instanceof Error ? err.message : 'Failed to create project');
     } finally {
       setLoading(false);
