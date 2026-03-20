@@ -210,7 +210,7 @@ export function LoginPage() {
         <div className="relative z-10">
           <div className="rounded-2xl bg-white/10 backdrop-blur-sm p-6 border border-white/10">
             <p className="text-white/90 text-sm leading-relaxed mb-4">
-              "FC Manager transformed how our team works. We shipped 40% faster in just 3 months."
+              "FactoCero Manager transformed how our team works. We shipped 40% faster in just 3 months."
             </p>
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-400/30 text-sm font-bold text-white">
@@ -233,7 +233,7 @@ export function LoginPage() {
               ))}
             </div>
             <p className="text-violet-200 text-xs ml-1">
-              <span className="font-semibold tracking-tight text-white">2,400+</span> teams trust FC Manager
+              <span className="font-semibold tracking-tight text-white">2,400+</span> teams trust FactoCero Manager
             </p>
           </div>
         </div>

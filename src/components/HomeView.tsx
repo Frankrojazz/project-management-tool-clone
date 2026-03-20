@@ -22,7 +22,7 @@ export function HomeView() {
             <Sparkles className="h-10 w-10 text-white" />
           </div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-3">
-            Welcome to FC Manager!
+            Welcome to FactoCero Manager!
           </h2>
           <p className="text-gray-500 dark:text-gray-400 mb-8">
             You don't have any projects yet. Let's create your first one to get started.

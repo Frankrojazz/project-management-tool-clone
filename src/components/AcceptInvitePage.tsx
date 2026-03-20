@@ -216,7 +216,7 @@ export function AcceptInvitePage() {
                 className="inline-flex items-center justify-center gap-2 w-full px-6 py-3.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-semibold hover:bg-gray-800 dark:hover:bg-gray-100 transition-all hover:scale-[1.02] active:scale-[0.98]"
               >
                 <Home size={18} />
-                Ir a FC Manager
+                Ir a FactoCero Manager
               </button>
             </div>
           </div>
@@ -437,7 +437,7 @@ export function AcceptInvitePage() {
         </div>
         
         <p className="text-center text-xs text-gray-400 dark:text-gray-500 mt-6">
-          FC Manager - Gestión de proyectos
+          FactoCero Manager - Gestión de proyectos
         </p>
       </div>
     </div>

@@ -91,7 +91,7 @@ export function OnboardingPage() {
               <Sparkles className="h-8 w-8 text-white" />
             </div>
             <h1 className="text-2xl font-bold text-white">
-              Welcome to FC Manager
+              Welcome to FactoCero Manager
             </h1>
             <p className="text-violet-100 mt-1">
               Let's create your first project

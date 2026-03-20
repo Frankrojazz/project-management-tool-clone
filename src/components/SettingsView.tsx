@@ -161,7 +161,7 @@ export function SettingsView() {
             )}
 
             {activeTab === 'display' && (
-              <SettingsCard title="Appearance" description="Customize how FC Manager looks and feels">
+              <SettingsCard title="Appearance" description="Customize how FactoCero Manager looks and feels">
                 {/* Theme Selection */}
                 <div className="mb-8">
                   <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">Theme</h3>
@@ -458,7 +458,7 @@ export function SettingsView() {
                       P
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">FC Manager</h3>
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">FactoCero Manager</h3>
                       <p className="text-sm text-gray-500 dark:text-gray-400">Project Management Platform</p>
                       <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Version 2.0.0</p>
                     </div>
@@ -478,7 +478,7 @@ export function SettingsView() {
 
                   <div className="pt-6 border-t border-gray-100 dark:border-gray-700 text-center">
                     <p className="text-xs text-gray-400 dark:text-gray-500">
-                      © 2025 FC Manager. Built with React + TypeScript + Tailwind CSS
+                      © 2025 FactoCero Manager. Built with React + TypeScript + Tailwind CSS
                     </p>
                   </div>
                 </div>
