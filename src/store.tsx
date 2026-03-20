@@ -845,6 +845,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     document.documentElement.lang = state.settings.language;
   }, [state.settings.language]);
 
+  // Update document title based on current project
+  useEffect(() => {
+    const currentProject = state.projects.find(p => p.id === state.currentProjectId);
+    if (currentProject) {
+      document.title = `${currentProject.name} | FactoCero`;
+    } else {
+      document.title = 'FactoCero Manager';
+    }
+  }, [state.currentProjectId, state.projects]);
+
   return <AppContext.Provider value={{ state, dispatch }}>{children}</AppContext.Provider>;
 }
 
