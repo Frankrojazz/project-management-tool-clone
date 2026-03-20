@@ -2,34 +2,61 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import logoPng from "../assets/logo.png";
 import toast from 'react-hot-toast';
-import { Eye, EyeOff, Lock, Check } from 'lucide-react';
+import { Eye, EyeOff, Lock, Check, AlertCircle, CheckCircle2 } from 'lucide-react';
+
+type PageState = 'loading' | 'invalid_token' | 'form' | 'success';
 
 export function UpdatePasswordPage() {
-  const navigate = (path: string) => {
-    window.location.href = path;
-  };
+  const [pageState, setPageState] = useState<PageState>('loading');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    document.title = 'Update Password | FactoCero';
+    document.title = 'Update Password - FactoCero Manager';
   }, []);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setIsReady(true);
-      } else {
-        toast.error('Invalid or expired reset link');
-        navigate('/login');
+    const handlePasswordReset = async () => {
+      try {
+        const hash = window.location.hash;
+        
+        if (!hash || !hash.includes('access_token=')) {
+          setPageState('invalid_token');
+          return;
+        }
+
+        const params = new URLSearchParams(hash.substring(1));
+        const accessToken = params.get('access_token');
+        const refreshToken = params.get('refresh_token');
+
+        if (!accessToken) {
+          setPageState('invalid_token');
+          return;
+        }
+
+        const { data, error: sessionError } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken || '',
+        });
+
+        if (sessionError || !data.session) {
+          setPageState('invalid_token');
+          return;
+        }
+
+        setPageState('form');
+      } catch (err) {
+        console.error('Error handling password reset:', err);
+        setPageState('invalid_token');
       }
-    });
-  }, [navigate]);
+    };
+
+    handlePasswordReset();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,15 +80,18 @@ export function UpdatePasswordPage() {
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.auth.updateUser({
+      const { error: updateError } = await supabase.auth.updateUser({
         password,
       });
 
-      if (error) throw error;
+      if (updateError) throw updateError;
 
+      setPageState('success');
       toast.success('Password updated successfully!');
-      await supabase.auth.signOut();
-      navigate('/login');
+
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 2000);
     } catch (err: any) {
       setError(err.message || 'Failed to update password. Please try again.');
     }
@@ -88,10 +118,54 @@ export function UpdatePasswordPage() {
 
   const passwordStrength = getPasswordStrength(password);
 
-  if (!isReady) {
+  if (pageState === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-violet-600 border-t-transparent" />
+        <div className="text-center">
+          <div className="h-12 w-12 rounded-full border-4 border-violet-600 border-t-transparent animate-spin mx-auto mb-4" />
+          <p className="text-gray-500">Verifying reset link...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (pageState === 'invalid_token') {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
+        <div className="w-full max-w-md text-center">
+          <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+            <AlertCircle size={32} className="text-red-600" />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Invalid or Expired Link</h1>
+          <p className="text-gray-500 mb-6">
+            This password reset link is invalid or has expired. Please request a new one.
+          </p>
+          <button
+            onClick={() => window.location.href = '/login'}
+            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl font-semibold hover:from-violet-700 hover:to-indigo-700 transition-all"
+          >
+            Back to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (pageState === 'success') {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
+        <div className="w-full max-w-md text-center">
+          <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+            <CheckCircle2 size={32} className="text-green-600" />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Password Updated!</h1>
+          <p className="text-gray-500 mb-6">
+            Your password has been changed successfully. Redirecting you to login...
+          </p>
+          <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+            <div className="h-full bg-green-500 rounded-full animate-pulse" style={{ width: '100%' }} />
+          </div>
+        </div>
       </div>
     );
   }
@@ -189,9 +263,7 @@ export function UpdatePasswordPage() {
                 </button>
                 {confirmPassword && (
                   <div className="absolute right-10 top-1/2 -translate-y-1/2">
-                    {password === confirmPassword ? (
-                      <Check size={16} className="text-green-500" />
-                    ) : null}
+                    {password === confirmPassword && <Check size={16} className="text-green-500" />}
                   </div>
                 )}
               </div>
@@ -226,7 +298,7 @@ export function UpdatePasswordPage() {
         <p className="text-center text-sm text-gray-500 mt-6">
           Remember your password?{' '}
           <button
-            onClick={() => navigate('/login')}
+            onClick={() => window.location.href = '/login'}
             className="text-violet-600 font-semibold hover:text-violet-700"
           >
             Sign In

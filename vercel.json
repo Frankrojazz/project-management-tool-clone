@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    { "source": "/update-password", "destination": "/update-password.html" },
+    { "source": "/update-password/:path*", "destination": "/update-password.html" },
+    { "source": "/accept-invite", "destination": "/accept-invite.html" },
+    { "source": "/accept-invite/:path*", "destination": "/accept-invite.html" }
+  ]
+}
