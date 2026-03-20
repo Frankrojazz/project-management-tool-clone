@@ -24,6 +24,9 @@ import {
 import logoPng from "../assets/logo.png";
 import { useState, useRef, useEffect } from 'react';
 import { useApp, useTranslations } from '../store';
+import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
+import toast from 'react-hot-toast';
 import { cn } from '../utils/cn';
 
 export function Sidebar() {
@@ -39,22 +42,47 @@ export function Sidebar() {
   const currentUserId = state.currentUser?.id ?? '';
   const unreadInbox = state.inbox.filter((i) => i.recipientId === currentUserId && !i.read).length;
 
-  const createProject = () => {
-    const name = window.prompt("New project name?");
-    if (!name) return;
+  const { user } = useAuth();
 
-    dispatch({
-      type: "ADD_PROJECT",
-      payload: {
-        id: "p-" + Date.now(),
+  const createProject = async () => {
+    if (!user) {
+      toast.error('You must be logged in to create a project');
+      return;
+    }
+
+    const name = window.prompt("New project name?");
+    if (!name || !name.trim()) return;
+
+    const { data, error } = await supabase
+      .from('projects')
+      .insert({
         name: name.trim(),
-        color: "#8B5CF6",
-        icon: "📁",
-        description: "",
-        isFavorite: false,
-        memberIds: [],
-      },
-    });
+        owner_id: user.id,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      toast.error(error.message || 'Failed to create project');
+      console.error('Create project error:', error);
+      return;
+    }
+
+    if (data) {
+      dispatch({
+        type: "ADD_PROJECT",
+        payload: {
+          id: data.id,
+          name: data.name,
+          color: "#8B5CF6",
+          icon: "📁",
+          description: data.description || "",
+          isFavorite: false,
+          memberIds: [],
+        },
+      });
+      toast.success('Project created!');
+    }
   };
 
 
