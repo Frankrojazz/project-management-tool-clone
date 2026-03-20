@@ -12,6 +12,15 @@ export default defineConfig({
   resolve: {
     alias: { "@": path.resolve(__dirname, "src") },
   },
+  build: {
+    rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, "index.html"),
+        "update-password": path.resolve(__dirname, "update-password.html"),
+        "accept-invite": path.resolve(__dirname, "accept-invite.html"),
+      },
+    },
+  },
   server: {
     host: "127.0.0.1",
     port: 5173,

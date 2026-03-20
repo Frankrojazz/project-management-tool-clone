@@ -13,10 +13,101 @@ import {
   Target,
   BarChart3,
   Users,
+  X,
+  Check,
 } from 'lucide-react';
+
+function ForgotPasswordModal({ onClose }: { onClose: () => void }) {
+  const { resetPasswordForEmail } = useAuth();
+  const [email, setEmail] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [sent, setSent] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+
+    setIsLoading(true);
+    try {
+      await resetPasswordForEmail(email);
+      setSent(true);
+      toast.success('Password reset email sent! Check your inbox.');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to send reset email');
+    }
+    setIsLoading(false);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 relative">
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+        >
+          <X size={20} />
+        </button>
+
+        {!sent ? (
+          <>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Reset Password</h2>
+            <p className="text-gray-500 text-sm mb-6">
+              Enter your email and we'll send you a link to reset your password.
+            </p>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+                <div className="relative">
+                  <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    className="w-full rounded-xl border border-gray-200 bg-white pl-10 pr-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition-all"
+                    required
+                    autoComplete="email"
+                  />
+                </div>
+              </div>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-3 text-sm font-semibold text-white hover:from-violet-700 hover:to-indigo-700 transition-all disabled:opacity-60"
+              >
+                {isLoading ? (
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                ) : (
+                  'Send Reset Link'
+                )}
+              </button>
+            </form>
+          </>
+        ) : (
+          <div className="text-center py-4">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Check size={32} className="text-green-600" />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Check your email</h2>
+            <p className="text-gray-500 text-sm mb-6">
+              We've sent a password reset link to <span className="font-medium">{email}</span>
+            </p>
+            <button
+              onClick={onClose}
+              className="text-violet-600 font-semibold hover:text-violet-700"
+            >
+              Back to login
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export function LoginPage() {
   const { signIn, signUp, user, loading: authLoading } = useAuth();
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -218,7 +309,7 @@ export function LoginPage() {
               <div className="flex items-center justify-between mb-1.5">
                 <label className="block text-sm font-medium text-gray-700">Password</label>
                 {!isRegister && (
-                  <button type="button" className="text-xs text-violet-600 hover:text-violet-700 font-medium" onClick={() => toast.error('Recuperar contraseña: Próximamente disponible')}>
+                  <button type="button" className="text-xs text-violet-600 hover:text-violet-700 font-medium" onClick={() => setShowForgotPassword(true)}>
                     Forgot password?
                   </button>
                 )}
@@ -308,6 +399,10 @@ export function LoginPage() {
           </p>
         </div>
       </div>
+
+      {showForgotPassword && (
+        <ForgotPasswordModal onClose={() => setShowForgotPassword(false)} />
+      )}
     </div>
   );
 }

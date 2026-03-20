@@ -1,27 +1,22 @@
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn(
-    "[Supabase] ⚠️  Variables de entorno no configuradas.\n" +
-    "   Por favor, agrega VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY en tu archivo .env\n" +
-    "   Puedes copiar .env.example a .env y completar los valores."
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error(
+    "[Supabase] Missing environment variables. " +
+    "Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file."
   );
 }
 
-export const supabase = createClient(
-  supabaseUrl || "",
-  supabaseAnonKey || "",
-  {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: true,
-    },
-  }
-);
+export const supabase = createClient(supabaseUrl, supabaseKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+  },
+});
 
 export type Database = {
   public: {
