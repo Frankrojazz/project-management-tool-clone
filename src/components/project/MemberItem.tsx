@@ -1,4 +1,4 @@
-import { User, Trash2, Crown } from 'lucide-react';
+import { Trash2, Crown } from 'lucide-react';
 
 interface Member {
   id: string;

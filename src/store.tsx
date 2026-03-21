@@ -157,49 +157,6 @@ const defaultSettings: AppSettings = {
   },
 };
 
-// Demo accounts
-const demoAccounts: { email: string; password: string; user: AuthUser }[] = [
-  {
-    email: 'sarah@fcmanager.io',
-    password: 'demo123',
-    user: {
-      id: 'u1',
-      name: 'Sarah Chen',
-      email: 'sarah@fcmanager.io',
-      avatar: 'SC',
-      color: '#8B5CF6',
-      role: 'Project Manager',
-      joinedDate: '2024-01-15',
-    },
-  },
-  {
-    email: 'alex@fcmanager.io',
-    password: 'demo123',
-    user: {
-      id: 'u2',
-      name: 'Alex Rivera',
-email: 'alex@fcmanager.io',
-      avatar: 'AR',
-      color: '#3B82F6',
-      role: 'Full Stack Developer',
-      joinedDate: '2024-02-20',
-    },
-  },
-  {
-    email: 'demo@demo.com',
-    password: 'demo',
-    user: {
-      id: 'u3',
-      name: 'Demo User',
-      email: 'demo@demo.com',
-      avatar: 'DU',
-      color: '#10B981',
-      role: 'Member',
-      joinedDate: '2024-01-15',
-    },
-  },
-];
-
 const initialState: AppState = {
   isAuthenticated: false,
   currentUser: null,
@@ -879,4 +836,3 @@ export function useTranslations(): Translations {
 // Backwards-compat: some components import { users } from '../store'
 // (kept as the static directory from data.ts)
 export { users };
-

@@ -89,8 +89,14 @@ export function UpdatePasswordPage() {
       setPageState('success');
       toast.success('Password updated successfully!');
 
+      try {
+        await supabase.auth.signOut();
+      } catch (signOutError) {
+        console.error('Error signing out after password reset:', signOutError);
+      }
+
       setTimeout(() => {
-        window.location.href = '/login';
+        window.location.href = '/';
       }, 2000);
     } catch (err: any) {
       setError(err.message || 'Failed to update password. Please try again.');
@@ -141,7 +147,7 @@ export function UpdatePasswordPage() {
             This password reset link is invalid or has expired. Please request a new one.
           </p>
           <button
-            onClick={() => window.location.href = '/login'}
+            onClick={() => window.location.href = '/'}
             className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl font-semibold hover:from-violet-700 hover:to-indigo-700 transition-all"
           >
             Back to Login
@@ -298,7 +304,7 @@ export function UpdatePasswordPage() {
         <p className="text-center text-sm text-gray-500 mt-6">
           Remember your password?{' '}
           <button
-            onClick={() => window.location.href = '/login'}
+            onClick={() => window.location.href = '/'}
             className="text-violet-600 font-semibold hover:text-violet-700"
           >
             Sign In

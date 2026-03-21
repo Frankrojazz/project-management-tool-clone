@@ -35,84 +35,98 @@ export function initializePassport(db: any) {
     done(null, user);
   });
 
-  passport.use(
-    new GoogleStrategy(
-      {
-        clientID: process.env.GOOGLE_CLIENT_ID!,
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-        callbackURL: `${process.env.API_URL || 'http://localhost:4000'}/auth/google/callback`,
-      },
-      async (accessToken, refreshToken, profile, done) => {
-        try {
-          const email = profile.emails?.[0]?.value;
-          if (!email) {
-            return done(new Error('No email found in Google profile'));
+  const googleClientId = process.env.GOOGLE_CLIENT_ID;
+  const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+
+  if (googleClientId && googleClientSecret) {
+    passport.use(
+      new GoogleStrategy(
+        {
+          clientID: googleClientId,
+          clientSecret: googleClientSecret,
+          callbackURL: `${process.env.API_URL || 'http://localhost:4000'}/auth/google/callback`,
+        },
+        async (accessToken, refreshToken, profile, done) => {
+          try {
+            const email = profile.emails?.[0]?.value;
+            if (!email) {
+              return done(new Error('No email found in Google profile'));
+            }
+
+            let user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+
+            if (!user) {
+              const id = generateId('u');
+              const name = profile.displayName || email.split('@')[0];
+              const avatar = generateAvatar(name);
+              const color = generateColor();
+              const hashedPassword = await bcrypt.hash(generateId('pwd'), 10);
+
+              db.prepare(`
+                INSERT INTO users (id, name, email, password, avatar, color, role)
+                VALUES (?, ?, ?, ?, ?, ?, 'member')
+              `).run(id, name, email, hashedPassword, avatar, color);
+
+              user = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
+            }
+
+            return done(null, user);
+          } catch (error) {
+            return done(error as Error);
           }
-
-          let user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
-
-          if (!user) {
-            const id = generateId('u');
-            const name = profile.displayName || email.split('@')[0];
-            const avatar = generateAvatar(name);
-            const color = generateColor();
-            const hashedPassword = await bcrypt.hash(generateId('pwd'), 10);
-
-            db.prepare(`
-              INSERT INTO users (id, name, email, password, avatar, color, role)
-              VALUES (?, ?, ?, ?, ?, ?, 'member')
-            `).run(id, name, email, hashedPassword, avatar, color);
-
-            user = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
-          }
-
-          return done(null, user);
-        } catch (error) {
-          return done(error as Error);
         }
-      }
-    )
-  );
+      )
+    );
+  } else {
+    console.warn('Google OAuth disabled: missing GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET');
+  }
 
-  passport.use(
-    new GitHubStrategy(
-      {
-        clientID: process.env.GITHUB_CLIENT_ID!,
-        clientSecret: process.env.GITHUB_CLIENT_SECRET!,
-        callbackURL: `${process.env.API_URL || 'http://localhost:4000'}/auth/github/callback`,
-        scope: ['user:email'],
-      },
-      async (accessToken, refreshToken, profile, done) => {
-        try {
-          const email = profile.emails?.[0]?.value;
-          if (!email) {
-            return done(new Error('No email found in GitHub profile'));
+  const githubClientId = process.env.GITHUB_CLIENT_ID;
+  const githubClientSecret = process.env.GITHUB_CLIENT_SECRET;
+
+  if (githubClientId && githubClientSecret) {
+    passport.use(
+      new GitHubStrategy(
+        {
+          clientID: githubClientId,
+          clientSecret: githubClientSecret,
+          callbackURL: `${process.env.API_URL || 'http://localhost:4000'}/auth/github/callback`,
+          scope: ['user:email'],
+        },
+        async (accessToken, refreshToken, profile, done) => {
+          try {
+            const email = profile.emails?.[0]?.value;
+            if (!email) {
+              return done(new Error('No email found in GitHub profile'));
+            }
+
+            let user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+
+            if (!user) {
+              const id = generateId('u');
+              const name = profile.displayName || profile.username || email.split('@')[0];
+              const avatar = generateAvatar(name);
+              const color = generateColor();
+              const hashedPassword = await bcrypt.hash(generateId('pwd'), 10);
+
+              db.prepare(`
+                INSERT INTO users (id, name, email, password, avatar, color, role)
+                VALUES (?, ?, ?, ?, ?, ?, 'member')
+              `).run(id, name, email, hashedPassword, avatar, color);
+
+              user = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
+            }
+
+            return done(null, user);
+          } catch (error) {
+            return done(error as Error);
           }
-
-          let user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
-
-          if (!user) {
-            const id = generateId('u');
-            const name = profile.displayName || profile.username || email.split('@')[0];
-            const avatar = generateAvatar(name);
-            const color = generateColor();
-            const hashedPassword = await bcrypt.hash(generateId('pwd'), 10);
-
-            db.prepare(`
-              INSERT INTO users (id, name, email, password, avatar, color, role)
-              VALUES (?, ?, ?, ?, ?, ?, 'member')
-            `).run(id, name, email, hashedPassword, avatar, color);
-
-            user = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
-          }
-
-          return done(null, user);
-        } catch (error) {
-          return done(error as Error);
         }
-      }
-    )
-  );
+      )
+    );
+  } else {
+    console.warn('GitHub OAuth disabled: missing GITHUB_CLIENT_ID/GITHUB_CLIENT_SECRET');
+  }
 
   return passport;
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { UserPlus, Users, Loader2, AlertCircle } from 'lucide-react';
+import { UserPlus, Users, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { InviteModal } from './InviteModal';
 import { MemberItem } from './MemberItem';
@@ -89,7 +89,7 @@ export function MembersSection({ projectId }: MembersSectionProps) {
     }
   };
 
-  const handleInviteSuccess = (message: string, addedDirectly?: boolean, resend?: boolean) => {
+  const handleInviteSuccess = (_message: string, addedDirectly?: boolean, resend?: boolean) => {
     if (resend) {
       toast.success('Invitation resent');
     } else if (addedDirectly) {
