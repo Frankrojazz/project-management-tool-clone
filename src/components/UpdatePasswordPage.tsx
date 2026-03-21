@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import logoPng from "../assets/logo.png";
+import logoPng from '../assets/logo.png';
 import toast from 'react-hot-toast';
 import { Eye, EyeOff, Lock, Check, AlertCircle, CheckCircle2 } from 'lucide-react';
 
@@ -14,48 +14,88 @@ export function UpdatePasswordPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const hasProcessedReset = useRef(false);
 
   useEffect(() => {
     document.title = 'Update Password - FactoCero Manager';
   }, []);
 
   useEffect(() => {
-    const handlePasswordReset = async () => {
+    if (hasProcessedReset.current) {
+      return;
+    }
+
+    hasProcessedReset.current = true;
+
+    const processResetLink = async () => {
       try {
+        console.log('HASH:', window.location.hash);
+
+        const {
+          data: { session: existingSession },
+          error: sessionReadError,
+        } = await supabase.auth.getSession();
+
+        console.log('USER:', existingSession?.user ?? null);
+        console.log('getSession error:', sessionReadError ?? null);
+
+        if (existingSession) {
+          setError(null);
+          setPageState('form');
+          return;
+        }
+
         const hash = window.location.hash;
-        
-        if (!hash || !hash.includes('access_token=')) {
+
+        if (!hash) {
+          setError('This password reset link is invalid or has expired. Please request a new one.');
           setPageState('invalid_token');
           return;
         }
 
-        const params = new URLSearchParams(hash.substring(1));
+        const params = new URLSearchParams(hash.replace('#', ''));
         const accessToken = params.get('access_token');
         const refreshToken = params.get('refresh_token');
 
-        if (!accessToken) {
+        console.log('TOKENS:', {
+          hasAccessToken: Boolean(accessToken),
+          hasRefreshToken: Boolean(refreshToken),
+        });
+
+        if (!accessToken || !refreshToken) {
+          setError('This password reset link is invalid or has expired. Please request a new one.');
           setPageState('invalid_token');
           return;
         }
 
         const { data, error: sessionError } = await supabase.auth.setSession({
           access_token: accessToken,
-          refresh_token: refreshToken || '',
+          refresh_token: refreshToken,
+        });
+
+        console.log('setSession result:', {
+          sessionError: sessionError?.message ?? null,
+          hasSession: Boolean(data.session),
+          user: data.session?.user ?? null,
         });
 
         if (sessionError || !data.session) {
+          setError('We could not verify your reset link. Please request a new one.');
           setPageState('invalid_token');
           return;
         }
 
+        window.history.replaceState({}, document.title, '/update-password');
+        setError(null);
         setPageState('form');
       } catch (err) {
         console.error('Error handling password reset:', err);
+        setError('We could not verify your reset link. Please request a new one.');
         setPageState('invalid_token');
       }
     };
 
-    handlePasswordReset();
+    void processResetLink();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -80,35 +120,38 @@ export function UpdatePasswordPage() {
     setIsLoading(true);
 
     try {
-      const { error: updateError } = await supabase.auth.updateUser({
-        password,
-      });
+      const { error: updateError } = await supabase.auth.updateUser({ password });
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        throw updateError;
+      }
 
       setPageState('success');
       toast.success('Password updated successfully!');
 
       try {
-        await supabase.auth.signOut();
+        await supabase.auth.signOut({ scope: 'global' });
       } catch (signOutError) {
         console.error('Error signing out after password reset:', signOutError);
       }
 
+      localStorage.removeItem('authToken');
+
       setTimeout(() => {
         window.location.href = '/';
-      }, 2000);
+      }, 1500);
     } catch (err: any) {
+      console.error('Error updating password:', err);
       setError(err.message || 'Failed to update password. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
   const getPasswordStrength = (pwd: string): { level: number; label: string; color: string } => {
     if (pwd.length === 0) return { level: 0, label: '', color: '' };
     if (pwd.length < 6) return { level: 1, label: 'Too short', color: 'bg-red-500' };
-    
+
     let strength = 0;
     if (pwd.length >= 6) strength++;
     if (pwd.length >= 8) strength++;
@@ -144,10 +187,12 @@ export function UpdatePasswordPage() {
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Invalid or Expired Link</h1>
           <p className="text-gray-500 mb-6">
-            This password reset link is invalid or has expired. Please request a new one.
+            {error || 'This password reset link is invalid or has expired. Please request a new one.'}
           </p>
           <button
-            onClick={() => window.location.href = '/'}
+            onClick={() => {
+              window.location.href = '/';
+            }}
             className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl font-semibold hover:from-violet-700 hover:to-indigo-700 transition-all"
           >
             Back to Login
@@ -188,9 +233,7 @@ export function UpdatePasswordPage() {
             </span>
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Set New Password</h1>
-          <p className="text-gray-500 text-sm mt-1">
-            Enter your new password below
-          </p>
+          <p className="text-gray-500 text-sm mt-1">Enter your new password below</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-xl shadow-gray-200/50 p-8 border border-gray-100">
@@ -254,8 +297,8 @@ export function UpdatePasswordPage() {
                     confirmPassword && password !== confirmPassword
                       ? 'border-red-400 focus:border-red-400'
                       : confirmPassword && password === confirmPassword
-                      ? 'border-green-400 focus:border-green-400'
-                      : 'border-gray-200 focus:border-violet-400'
+                        ? 'border-green-400 focus:border-green-400'
+                        : 'border-gray-200 focus:border-violet-400'
                   }`}
                   required
                   autoComplete="new-password"
@@ -304,7 +347,9 @@ export function UpdatePasswordPage() {
         <p className="text-center text-sm text-gray-500 mt-6">
           Remember your password?{' '}
           <button
-            onClick={() => window.location.href = '/'}
+            onClick={() => {
+              window.location.href = '/';
+            }}
             className="text-violet-600 font-semibold hover:text-violet-700"
           >
             Sign In
