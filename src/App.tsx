@@ -1,4 +1,4 @@
-import { AppProvider, useApp } from './store';
+import { useApp } from './store';
 import { useCurrentUser } from './context/AuthContext';
 import { LoginPage } from './components/LoginPage';
 import { OnboardingPage } from './components/OnboardingPage';
@@ -166,9 +166,9 @@ function AppContent() {
 
 export function App() {
   return (
-    <AppProvider>
+    <>
       <Toaster position="top-right" />
       <AppContent />
-    </AppProvider>
+    </>
   );
 }
