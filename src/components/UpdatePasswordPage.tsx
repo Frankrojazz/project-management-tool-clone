@@ -29,15 +29,9 @@ export function UpdatePasswordPage() {
 
     const processResetLink = async () => {
       try {
-        console.log('HASH:', window.location.hash);
-
         const {
           data: { session: existingSession },
-          error: sessionReadError,
         } = await supabase.auth.getSession();
-
-        console.log('USER:', existingSession?.user ?? null);
-        console.log('getSession error:', sessionReadError ?? null);
 
         if (existingSession) {
           setError(null);
@@ -57,11 +51,6 @@ export function UpdatePasswordPage() {
         const accessToken = params.get('access_token');
         const refreshToken = params.get('refresh_token');
 
-        console.log('TOKENS:', {
-          hasAccessToken: Boolean(accessToken),
-          hasRefreshToken: Boolean(refreshToken),
-        });
-
         if (!accessToken || !refreshToken) {
           setError('This password reset link is invalid or has expired. Please request a new one.');
           setPageState('invalid_token');
@@ -71,12 +60,6 @@ export function UpdatePasswordPage() {
         const { data, error: sessionError } = await supabase.auth.setSession({
           access_token: accessToken,
           refresh_token: refreshToken,
-        });
-
-        console.log('setSession result:', {
-          sessionError: sessionError?.message ?? null,
-          hasSession: Boolean(data.session),
-          user: data.session?.user ?? null,
         });
 
         if (sessionError || !data.session) {
