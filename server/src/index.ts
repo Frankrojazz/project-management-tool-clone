@@ -88,6 +88,15 @@ type DB = {
   inbox: any[];
 };
 
+type InvitationRecord = {
+  token: string;
+  projectId: string;
+  email: string;
+  invitedBy: string;
+  status: 'pending' | 'accepted' | 'expired' | 'rejected';
+  expiresAt: string;
+};
+
 const initialData: DB = {
   users: [
     { id: 'u1', name: 'Sarah Chen', avatar: 'SC', color: '#8B5CF6', type: 'human', email: 'sarah@fcmanager.io' },
@@ -113,6 +122,7 @@ const initialData: DB = {
 };
 
 let inMemoryDb: DB = JSON.parse(JSON.stringify(initialData));
+let inMemoryInvitations: InvitationRecord[] = [];
 
 function getInMemoryData() {
   try {
@@ -408,6 +418,326 @@ app.patch("/api/tasks/:id", authMiddleware, taskValidations.update, (req, res) =
 
     res.setHeader("Cache-Control", "no-store");
     return res.json(next);
+  }
+});
+
+function generateInvitationToken() {
+  return `inv-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function getProjectMembersFromMemory(projectId: string) {
+  const project = inMemoryDb.projects.find((p) => p.id === projectId);
+  if (!project) return [];
+
+  const memberIds: string[] = Array.isArray(project.memberIds) ? project.memberIds : [];
+  return memberIds
+    .map((memberId) => inMemoryDb.users.find((u) => u.id === memberId))
+    .filter(Boolean)
+    .map((user, index) => ({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      avatar: user.avatar,
+      color: user.color,
+      role: index === 0 ? 'owner' : 'member',
+      joinedAt: new Date().toISOString(),
+    }));
+}
+
+app.get('/api/projects/:projectId/members', authMiddleware, (req, res) => {
+  const projectId = String(req.params.projectId);
+  const userId = (req as any).user.userId;
+
+  try {
+    const membership = db
+      .prepare('SELECT role FROM project_members WHERE project_id = ? AND user_id = ?')
+      .get(projectId, userId) as { role: string } | undefined;
+
+    if (!membership) {
+      return res.status(403).json({ error: 'You are not a member of this project' });
+    }
+
+    const members = db
+      .prepare(`
+        SELECT
+          pm.user_id as id,
+          u.name,
+          u.email,
+          u.avatar,
+          u.color,
+          pm.role,
+          pm.joined_at as joinedAt
+        FROM project_members pm
+        JOIN users u ON u.id = pm.user_id
+        WHERE pm.project_id = ?
+        ORDER BY CASE pm.role WHEN 'owner' THEN 0 ELSE 1 END, pm.joined_at ASC
+      `)
+      .all(projectId);
+
+    return res.json({ members, isOwner: membership.role === 'owner' });
+  } catch (_error) {
+    const members = getProjectMembersFromMemory(projectId);
+    const current = members.find((m) => m.id === userId);
+
+    if (!current) {
+      return res.status(403).json({ error: 'You are not a member of this project' });
+    }
+
+    return res.json({ members, isOwner: current.role === 'owner' });
+  }
+});
+
+app.delete('/api/projects/:projectId/members/:memberId', authMiddleware, (req, res) => {
+  const projectId = String(req.params.projectId);
+  const memberId = String(req.params.memberId);
+  const userId = (req as any).user.userId;
+
+  try {
+    const requesterMembership = db
+      .prepare('SELECT role FROM project_members WHERE project_id = ? AND user_id = ?')
+      .get(projectId, userId) as { role: string } | undefined;
+
+    if (!requesterMembership || requesterMembership.role !== 'owner') {
+      return res.status(403).json({ error: 'Only project owners can remove members' });
+    }
+
+    const targetMembership = db
+      .prepare('SELECT role FROM project_members WHERE project_id = ? AND user_id = ?')
+      .get(projectId, memberId) as { role: string } | undefined;
+
+    if (!targetMembership) {
+      return res.status(404).json({ error: 'Member not found in project' });
+    }
+
+    if (targetMembership.role === 'owner') {
+      return res.status(400).json({ error: 'Cannot remove project owner' });
+    }
+
+    db.prepare('DELETE FROM project_members WHERE project_id = ? AND user_id = ?').run(projectId, memberId);
+    return res.json({ success: true });
+  } catch (_error) {
+    const project = inMemoryDb.projects.find((p) => p.id === projectId);
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+
+    const ownerId = Array.isArray(project.memberIds) ? project.memberIds[0] : null;
+    if (ownerId !== userId) {
+      return res.status(403).json({ error: 'Only project owners can remove members' });
+    }
+    if (memberId === ownerId) {
+      return res.status(400).json({ error: 'Cannot remove project owner' });
+    }
+
+    project.memberIds = (project.memberIds || []).filter((id: string) => id !== memberId);
+    return res.json({ success: true });
+  }
+});
+
+app.post('/api/projects/:projectId/invite', authMiddleware, (req, res) => {
+  const projectId = String(req.params.projectId);
+  const userId = (req as any).user.userId;
+  const email = String(req.body?.email || '').trim().toLowerCase();
+
+  if (!email) {
+    return res.status(400).json({ error: 'Email is required' });
+  }
+
+  try {
+    const requesterMembership = db
+      .prepare('SELECT role FROM project_members WHERE project_id = ? AND user_id = ?')
+      .get(projectId, userId) as { role: string } | undefined;
+
+    if (!requesterMembership || requesterMembership.role !== 'owner') {
+      return res.status(403).json({ error: 'Only project owners can invite members' });
+    }
+
+    const existingUser = db.prepare('SELECT id FROM users WHERE lower(email) = ?').get(email) as { id: string } | undefined;
+
+    if (existingUser) {
+      const existingMembership = db
+        .prepare('SELECT id FROM project_members WHERE project_id = ? AND user_id = ?')
+        .get(projectId, existingUser.id);
+
+      if (existingMembership) {
+        return res.status(200).json({ message: 'User is already a member', addedDirectly: false, resend: false });
+      }
+
+      db.prepare('INSERT INTO project_members (project_id, user_id, role, joined_at) VALUES (?, ?, ?, datetime("now"))')
+        .run(projectId, existingUser.id, 'member');
+
+      return res.status(200).json({ message: 'User added to project', addedDirectly: true, resend: false });
+    }
+
+    const token = generateInvitationToken();
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+    const pending = db
+      .prepare('SELECT token FROM invitations WHERE project_id = ? AND lower(email) = ? AND status = ?')
+      .get(projectId, email, 'pending') as { token: string } | undefined;
+
+    if (pending) {
+      return res.status(200).json({
+        message: 'Invitation resent',
+        addedDirectly: false,
+        resend: true,
+        inviteLink: `/accept-invite?token=${pending.token}`,
+      });
+    }
+
+    db.prepare(`
+      INSERT INTO invitations (project_id, email, invited_by, token, status, expires_at, created_at)
+      VALUES (?, ?, ?, ?, 'pending', ?, datetime('now'))
+    `).run(projectId, email, userId, token, expiresAt);
+
+    return res.status(200).json({
+      message: 'Invitation sent',
+      addedDirectly: false,
+      resend: false,
+      inviteLink: `/accept-invite?token=${token}`,
+    });
+  } catch (_error) {
+    const token = generateInvitationToken();
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+    const pending = inMemoryInvitations.find(
+      (inv) => inv.projectId === projectId && inv.email === email && inv.status === 'pending'
+    );
+
+    if (pending) {
+      return res.status(200).json({
+        message: 'Invitation resent',
+        addedDirectly: false,
+        resend: true,
+        inviteLink: `/accept-invite?token=${pending.token}`,
+      });
+    }
+
+    inMemoryInvitations.push({
+      token,
+      projectId,
+      email,
+      invitedBy: userId,
+      status: 'pending',
+      expiresAt,
+    });
+
+    return res.status(200).json({
+      message: 'Invitation sent',
+      addedDirectly: false,
+      resend: false,
+      inviteLink: `/accept-invite?token=${token}`,
+    });
+  }
+});
+
+app.get('/api/invitations/verify/:token', (req, res) => {
+  const token = String(req.params.token);
+
+  try {
+    const invitation = db
+      .prepare('SELECT * FROM invitations WHERE token = ?')
+      .get(token) as any;
+
+    if (!invitation) {
+      return res.status(404).json({ error: 'Invitation not found' });
+    }
+    if (invitation.status !== 'pending') {
+      return res.status(400).json({ error: `Invitation is ${invitation.status}`, status: invitation.status });
+    }
+    if (invitation.expires_at && new Date(invitation.expires_at) < new Date()) {
+      db.prepare('UPDATE invitations SET status = ? WHERE token = ?').run('expired', token);
+      return res.status(400).json({ error: 'Invitation has expired' });
+    }
+
+    const project = db.prepare('SELECT id, name, color, icon, description FROM projects WHERE id = ?').get(invitation.project_id) as any;
+    const inviter = db.prepare('SELECT name FROM users WHERE id = ?').get(invitation.invited_by) as any;
+
+    return res.json({
+      valid: true,
+      email: invitation.email,
+      project,
+      inviterName: inviter?.name || 'Someone',
+      expiresAt: invitation.expires_at,
+    });
+  } catch (_error) {
+    const invitation = inMemoryInvitations.find((inv) => inv.token === token);
+    if (!invitation) return res.status(404).json({ error: 'Invitation not found' });
+    if (invitation.status !== 'pending') {
+      return res.status(400).json({ error: `Invitation is ${invitation.status}`, status: invitation.status });
+    }
+    if (new Date(invitation.expiresAt) < new Date()) {
+      invitation.status = 'expired';
+      return res.status(400).json({ error: 'Invitation has expired' });
+    }
+
+    const project = inMemoryDb.projects.find((p) => p.id === invitation.projectId);
+    const inviter = inMemoryDb.users.find((u) => u.id === invitation.invitedBy);
+
+    return res.json({
+      valid: true,
+      email: invitation.email,
+      project,
+      inviterName: inviter?.name || 'Someone',
+      expiresAt: invitation.expiresAt,
+    });
+  }
+});
+
+app.post('/api/invitations/:token/accept', authMiddleware, (req, res) => {
+  const token = String(req.params.token);
+  const userId = (req as any).user.userId;
+  const userEmail = String((req as any).user.email || '').toLowerCase();
+
+  try {
+    const invitation = db
+      .prepare('SELECT * FROM invitations WHERE token = ?')
+      .get(token) as any;
+
+    if (!invitation) return res.status(404).json({ error: 'Invitation not found' });
+    if (invitation.status !== 'pending') return res.status(400).json({ error: 'Invitation already processed' });
+    if (invitation.expires_at && new Date(invitation.expires_at) < new Date()) {
+      db.prepare('UPDATE invitations SET status = ? WHERE token = ?').run('expired', token);
+      return res.status(400).json({ error: 'Invitation has expired' });
+    }
+    if (String(invitation.email || '').toLowerCase() !== userEmail) {
+      return res.status(403).json({ error: 'This invitation was sent to a different email address' });
+    }
+
+    const existingMembership = db
+      .prepare('SELECT id FROM project_members WHERE project_id = ? AND user_id = ?')
+      .get(invitation.project_id, userId);
+
+    if (!existingMembership) {
+      db.prepare('INSERT INTO project_members (project_id, user_id, role, joined_at) VALUES (?, ?, ?, datetime("now"))')
+        .run(invitation.project_id, userId, 'member');
+    }
+
+    db.prepare('UPDATE invitations SET status = ?, accepted_at = datetime("now") WHERE token = ?')
+      .run('accepted', token);
+
+    return res.json({ success: true, projectId: invitation.project_id, message: 'Invitation accepted' });
+  } catch (_error) {
+    const invitation = inMemoryInvitations.find((inv) => inv.token === token);
+    if (!invitation) return res.status(404).json({ error: 'Invitation not found' });
+    if (invitation.status !== 'pending') return res.status(400).json({ error: 'Invitation already processed' });
+    if (new Date(invitation.expiresAt) < new Date()) {
+      invitation.status = 'expired';
+      return res.status(400).json({ error: 'Invitation has expired' });
+    }
+    if (invitation.email.toLowerCase() !== userEmail) {
+      return res.status(403).json({ error: 'This invitation was sent to a different email address' });
+    }
+
+    const project = inMemoryDb.projects.find((p) => p.id === invitation.projectId);
+    if (project) {
+      const members = Array.isArray(project.memberIds) ? project.memberIds : [];
+      if (!members.includes(userId)) {
+        members.push(userId);
+      }
+      project.memberIds = members;
+    }
+
+    invitation.status = 'accepted';
+    return res.json({ success: true, projectId: invitation.projectId, message: 'Invitation accepted' });
   }
 });
 

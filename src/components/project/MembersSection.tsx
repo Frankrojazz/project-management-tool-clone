@@ -70,7 +70,7 @@ export function MembersSection({ projectId }: MembersSectionProps) {
     try {
       const token = localStorage.getItem('authToken');
       
-      const res = await fetch(`/api/projects/${projectId}/members/${memberId}`, {
+      const res = await fetch(buildApiUrl(`/api/projects/${projectId}/members/${memberId}`), {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
